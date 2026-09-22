@@ -1,0 +1,13 @@
+{
+  "name": "theos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Skills, hooks and workflow for my agent harnesses.",
+  "scripts": {
+    "link": "node scripts/link-skills.mjs",
+    "install-hooks": "node scripts/install-hooks.mjs",
+    "setup": "npm run link && npm run install-hooks",
+    "test": "node --test scripts/*.test.mjs hooks/*.test.mjs"
+  }
+}

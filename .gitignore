@@ -1,0 +1,8 @@
+# Project code lives in its own repositories.
+# projects/ stays as a working directory so cross-project agent sessions work.
+projects/*
+!projects/.gitkeep
+
+.claude/settings.local.json
+
+node_modules/

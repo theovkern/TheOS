@@ -1,0 +1,1805 @@
+<title>Claude Code Key Drills</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #efedea;
+    --surface: #f8f7f5;
+    --surface-2: #e5e1dc;
+    --line: #d1cac2;
+    --line-soft: #ded8d1;
+    --text: #3c3733;
+    --text-dim: #6e6660;
+    --text-faint: #8f8781;
+    --accent: #b0562e;
+    --accent-soft: #f0ded3;
+    --ok: #4a7d33;
+    --ok-soft: #dfeacf;
+    --warn: #a2740c;
+    --warn-soft: #f4e8c6;
+    --bad: #b32c33;
+    --bad-soft: #f6dbdb;
+    --wait: #8a6a1c;
+    --wait-soft: #f4e8c6;
+    --key-face: #ffffff;
+    --key-edge: #bdb5ac;
+    --pane-bg: #211d1b;
+    --pane-line: #3a332f;
+    --pane-text: #ded7d0;
+    --pane-dim: #8b8179;
+    --radius: 4px;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #191614;
+      --surface: #221e1c;
+      --surface-2: #2d2825;
+      --line: #433c37;
+      --line-soft: #332e2a;
+      --text: #e2dcd6;
+      --text-dim: #a79f98;
+      --text-faint: #837b74;
+      --accent: #e59a70;
+      --accent-soft: #3b2418;
+      --ok: #a8cf8e;
+      --ok-soft: #22301b;
+      --warn: #dcbb70;
+      --warn-soft: #372c17;
+      --bad: #ef9b9b;
+      --bad-soft: #3a2020;
+      --wait: #e0c780;
+      --wait-soft: #342a10;
+      --key-face: #322c28;
+      --key-edge: #524a44;
+      --pane-bg: #100e0d;
+      --pane-line: #322c28;
+      --pane-text: #ddd6cf;
+      --pane-dim: #7d746c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614;
+    --surface: #221e1c;
+    --surface-2: #2d2825;
+    --line: #433c37;
+    --line-soft: #332e2a;
+    --text: #e2dcd6;
+    --text-dim: #a79f98;
+    --text-faint: #837b74;
+    --accent: #e59a70;
+    --accent-soft: #3b2418;
+    --ok: #a8cf8e;
+    --ok-soft: #22301b;
+    --warn: #dcbb70;
+    --warn-soft: #372c17;
+    --bad: #ef9b9b;
+    --bad-soft: #3a2020;
+    --wait: #e0c780;
+    --wait-soft: #342a10;
+    --key-face: #322c28;
+    --key-edge: #524a44;
+    --pane-bg: #100e0d;
+    --pane-line: #322c28;
+    --pane-text: #ddd6cf;
+    --pane-dim: #7d746c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0 20px 64px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    padding: 28px 0 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  h1 .dim { color: var(--text-faint); font-weight: 400; }
+  .tagline { color: var(--text-dim); font-size: 13.5px; margin: 0; flex: 1 1 260px; }
+  .theme-btn {
+    font: inherit;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 3px 9px;
+    cursor: pointer;
+  }
+  .theme-btn:hover { color: var(--text); border-color: var(--text-faint); }
+
+  /* ---------- tier picker ---------- */
+  .tiers {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 16px 0 0;
+  }
+  .tiers .lab {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .tier-btn {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+  .tier-btn:hover { color: var(--text); border-color: var(--text-faint); }
+  .tier-btn.on {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .tier-btn .n { color: var(--text-faint); font-weight: 400; }
+  .tier-btn.on .n { color: var(--accent); opacity: .75; }
+  .tier-why { font-size: 13px; color: var(--text-dim); margin: 6px 0 0; }
+
+  /* ---------- speed timer ---------- */
+  .timer-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin-top: -4px;
+  }
+  .timer-row input[type="number"] {
+    width: 66px;
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    padding: 3px 6px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .time-left { font-family: var(--mono); color: var(--text); min-width: 44px; }
+  .timebar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    overflow: hidden;
+    margin: -8px 0 0;
+  }
+  .timebar > span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: var(--accent);
+  }
+  .timebar.is-warn > span { background: var(--warn); }
+  .timebar.is-bad > span { background: var(--bad); }
+  .timebar[hidden] { display: none; }
+
+  /* ---------- main grid ---------- */
+  .cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 22px;
+    padding-top: 22px;
+    align-items: start;
+  }
+  @media (max-width: 880px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin: 0 0 10px;
+  }
+
+  /* ---------- drill ---------- */
+  .drill {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 352px;
+  }
+  .task-cat {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .task {
+    font-family: var(--mono);
+    font-size: 24px;
+    line-height: 1.25;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .task-note { color: var(--text-dim); font-size: 13px; margin: -6px 0 0; }
+  .why {
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 11px;
+    margin: -2px 0 0;
+    font-size: 13.5px;
+    color: var(--text-dim);
+    max-width: 62ch;
+  }
+  .why b { color: var(--text); font-weight: 600; }
+
+  .warnbox {
+    font-size: 12.5px;
+    color: var(--warn);
+    background: var(--warn-soft);
+    border: 1px solid var(--warn);
+    border-radius: var(--radius);
+    padding: 6px 9px;
+    margin: -2px 0 0;
+  }
+  .warnbox[hidden] { display: none; }
+
+  .readout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 42px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+  }
+  .readout.is-ok { background: var(--ok-soft); border-color: var(--ok); }
+  .readout.is-bad { background: var(--bad-soft); border-color: var(--bad); }
+  .readout.is-mid {
+    background: var(--wait-soft);
+    border-color: var(--wait);
+    border-style: dashed;
+  }
+  .readout.is-mid kbd { border-color: var(--wait); color: var(--wait); }
+  .readout .waiting {
+    font-family: var(--mono); font-size: 13px; color: var(--wait);
+  }
+  .readout .placeholder { font-family: var(--mono); font-size: 13px; color: var(--text-faint); }
+
+  kbd {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--key-face);
+    border: 1px solid var(--key-edge);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: 2px 7px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .then { font-family: var(--mono); font-size: 12px; color: var(--text-faint); }
+
+  .verdict { font-size: 14px; min-height: 22px; margin: 0; }
+  .verdict b { font-weight: 600; }
+  .verdict.ok { color: var(--ok); }
+  .verdict.bad { color: var(--bad); }
+  .verdict.hint { color: var(--warn); }
+
+  .typerow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+  .typerow input[type="text"] {
+    font: inherit;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    padding: 4px 8px;
+    width: 172px;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .typerow input[type="text"]::placeholder { color: var(--text-faint); }
+  .typerow[hidden] { display: none; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .row.spread { justify-content: space-between; margin-top: auto; }
+  button.act {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 5px 11px;
+    cursor: pointer;
+  }
+  button.act:hover { color: var(--text); border-color: var(--text-faint); }
+  button.act.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .stats { display: flex; gap: 16px; font-family: var(--mono); font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .stats b { color: var(--text); font-weight: 600; }
+
+  /* ---------- mock prompt ---------- */
+  .mock {
+    background: var(--pane-bg);
+    border: 1px solid var(--pane-line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    font-family: var(--mono);
+    color: var(--pane-text);
+    font-size: 12.5px;
+    display: flex;
+    flex-direction: column;
+    height: 352px;
+  }
+  .mock-log { flex: 1 1 auto; padding: 9px 11px; overflow: hidden; color: var(--pane-dim); display: flex; flex-direction: column; gap: 3px; min-height: 0; }
+  .mock-log .said { color: var(--pane-text); }
+  .mock-log .tool { color: var(--accent); }
+  .mock-log .flash { color: var(--pane-text); background: var(--pane-line); border-radius: 2px; padding: 1px 6px; align-self: flex-start; }
+  .mock-box {
+    flex: 0 0 auto;
+    margin: 0 9px;
+    border: 1px solid var(--pane-line);
+    border-radius: 3px;
+    padding: 7px 9px;
+    display: flex;
+    gap: 7px;
+    min-height: 62px;
+  }
+  .mock-box.armed { border-color: var(--wait); border-style: dashed; }
+  .mock-box .caret { color: var(--accent); flex: 0 0 auto; }
+  .mock-text { white-space: pre-wrap; word-break: break-word; min-width: 0; line-height: 1.45; }
+  .cur { background: var(--pane-text); color: var(--pane-bg); }
+  .cur.eol { padding-right: 0.5ch; }
+  .mock-foot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 6px 10px 8px;
+    color: var(--pane-dim);
+    font-size: 11.5px;
+  }
+  .mode-lamp { padding: 1px 7px; border-radius: 2px; border: 1px solid var(--pane-line); letter-spacing: 0.04em; }
+  .mode-lamp.hot { background: var(--accent); border-color: var(--accent); color: #1a0f08; font-weight: 600; }
+  .cutbuf { color: var(--pane-dim); }
+  .cutbuf b { color: var(--pane-text); font-weight: 500; }
+  .mock-note { font-size: 11.5px; color: var(--text-faint); margin: 8px 0 0; font-family: var(--sans); }
+
+  /* ---------- mastery board ---------- */
+  .board { padding-top: 30px; }
+  .board-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+  .legend { display: flex; gap: 12px; font-size: 11.5px; color: var(--text-dim); font-family: var(--mono); flex-wrap: wrap; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+  .meter { display: flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); }
+  .meter .track { width: 96px; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+  .meter .fill { height: 100%; background: var(--ok); width: 0; }
+  .meter .num { font-variant-numeric: tabular-nums; }
+
+  .group { margin-bottom: 20px; }
+  .group h3 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 500;
+    margin: 0 0 7px;
+  }
+  .group h3 .rule { flex: 1 1 auto; height: 1px; background: var(--line-soft); }
+  .chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 5px; }
+  .chip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    font: inherit;
+    font-size: 13px;
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--line);
+    border-radius: var(--radius);
+    padding: 7px 10px;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .chip:hover { border-color: var(--text-faint); }
+  .chip .what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .keys {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    justify-self: end;
+  }
+  .strip { display: flex; gap: 2px; justify-self: end; }
+  .strip i { display: block; width: 5px; height: 10px; border-radius: 1px; background: var(--surface-2); }
+  .strip i.ok { background: var(--ok); }
+  .strip i.bad { background: var(--bad); }
+  .chip .keys.locked { color: var(--text-faint); letter-spacing: 0.18em; opacity: .5; }
+  .chip[data-state="solid"] .keys { color: var(--ok); }
+  .chip[data-state="solid"] { border-left-color: var(--ok); }
+  .chip[data-state="learning"] { border-left-color: var(--warn); }
+  .chip[data-state="shaky"] { border-left-color: var(--bad); }
+  .chip[data-state="new"] { border-left-color: var(--line); }
+  .chip.is-current { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* ---------- accuracy chart ---------- */
+  .chart-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chart-key { display: flex; gap: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); }
+  .swatch { display: inline-block; width: 14px; height: 2px; margin-right: 6px; vertical-align: 4px; }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 10px 12px 6px;
+    overflow-x: auto;
+  }
+  .chart-box svg { display: block; width: 100%; min-width: 440px; height: auto; }
+  .chart-box .grid { stroke: var(--line-soft); stroke-width: 1; }
+  .chart-box .zero { stroke: var(--line); stroke-width: 1; }
+  .chart-box .area { fill: var(--accent); opacity: .12; }
+  .chart-box .cum { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+  .chart-box .roll { fill: none; stroke: var(--text-faint); stroke-width: 1.25; stroke-dasharray: 3 3; }
+  .chart-box .tip { fill: var(--accent); }
+  .chart-box .tick { fill: var(--text-faint); font-family: var(--mono); font-size: 10px; }
+  .chart-empty { color: var(--text-faint); font-family: var(--mono); font-size: 12.5px; padding: 26px 2px; }
+  .chart-note { font-size: 12px; color: var(--text-faint); margin: 8px 0 0; }
+
+  footer { padding-top: 8px; color: var(--text-dim); font-size: 13px; }
+  footer p { max-width: 74ch; }
+  footer code { font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .readout, .chip, .mock-box { transition: background-color .12s ease, border-color .12s ease, color .12s ease; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Claude Code <span class="dim">key drills</span></h1>
+    <p class="tagline">Press the real keys. No prefix &mdash; every shortcut fires straight away.</p>
+    <button class="theme-btn" id="themeBtn" type="button">theme</button>
+  </header>
+
+  <div class="tiers">
+    <span class="lab">Deck</span>
+    <button class="tier-btn" id="tier1" type="button">Core <span class="n">&middot; 0</span></button>
+    <button class="tier-btn" id="tier2" type="button">Level up <span class="n">&middot; 0</span></button>
+    <button class="tier-btn" id="tier3" type="button">All <span class="n">&middot; 0</span></button>
+  </div>
+  <p class="tier-why" id="tierWhy"></p>
+
+  <div class="cols">
+    <section>
+      <p class="eyebrow">Drill</p>
+      <div class="drill">
+        <div class="task-cat" id="taskCat">Move the cursor</div>
+        <p class="task" id="taskText">Jump to the start of the line</p>
+        <p class="task-note" id="taskNote"></p>
+        <p class="why" id="taskWhy"></p>
+        <p class="warnbox" id="warnBox" hidden></p>
+
+        <div class="readout" id="readout"><span class="placeholder">waiting for keys&hellip;</span></div>
+        <div class="timebar" id="timebar" hidden><span id="timefill"></span></div>
+        <p class="verdict" id="verdict">&nbsp;</p>
+
+        <div class="typerow" id="typeRow" hidden>
+          <label for="typeIn" id="typeLabel">Cannot press it? Type it:</label>
+          <input id="typeIn" type="text" autocomplete="off" spellcheck="false" placeholder="key">
+        </div>
+
+        <div class="row spread">
+          <div class="row">
+            <button class="act" id="revealBtn" type="button">Reveal</button>
+            <button class="act" id="skipBtn" type="button">Skip</button>
+            <button class="act" id="resetBtn" type="button">Reset score</button>
+          </div>
+          <div class="stats">
+            <span>streak <b id="sStreak">0</b></span>
+            <span>best <b id="sBest">0</b></span>
+            <span>right <b id="sRight">0</b>/<b id="sTotal">0</b></span>
+            <span>all <b id="sPct">&mdash;</b></span>
+            <span title="Your accuracy over the last 100 answers">last 100 <b id="sRoll">&mdash;</b></span>
+          </div>
+        </div>
+
+        <div class="timer-row">
+          <button class="act" id="timerBtn" type="button">Timer off</button>
+          <label for="timerSecs">time limit</label>
+          <input id="timerSecs" type="number" min="0.5" max="600" step="0.5" value="5">
+          <span>seconds</span>
+          <span class="time-left" id="timeLeft"></span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <p class="eyebrow">Preview</p>
+      <div class="mock">
+        <div class="mock-log" id="mockLog"></div>
+        <div class="mock-box" id="mockBox">
+          <span class="caret">&gt;</span>
+          <div class="mock-text" id="mockText"></div>
+        </div>
+        <div class="mock-foot">
+          <span class="mode-lamp" id="modeLamp">normal</span>
+          <span class="cutbuf" id="cutBuf"></span>
+        </div>
+      </div>
+      <p class="mock-note">A drawing of the prompt box, not a real one. The white block is your cursor. It moves when you get one right, so you can see what each key does.</p>
+    </section>
+  </div>
+
+  <section class="board">
+    <div class="board-head">
+      <p class="eyebrow" style="margin:0">Your shortcuts &mdash; click one to drill it</p>
+      <div class="meter" id="overall">
+        <span class="num">0/0 solid</span>
+        <span class="track"><span class="fill"></span></span>
+      </div>
+      <button class="act" id="peekBtn" type="button">Show all keys</button>
+    </div>
+    <div class="board-head" style="margin-bottom:14px">
+      <div class="legend">
+        <span><span class="dot" style="background:var(--line)"></span>new</span>
+        <span><span class="dot" style="background:var(--warn)"></span>learning</span>
+        <span><span class="dot" style="background:var(--ok)"></span>solid</span>
+        <span><span class="dot" style="background:var(--bad)"></span>missed last</span>
+        <span>bars = last 10 showings, oldest on the left</span>
+        <span>&bull;&bull;&bull; keys hidden until you get one right</span>
+      </div>
+    </div>
+    <div id="board"></div>
+  </section>
+
+  <section class="board" style="padding-top:26px">
+    <div class="chart-head">
+      <p class="eyebrow" style="margin:0">Accuracy over time</p>
+      <div class="chart-key">
+        <span><span class="swatch" style="background:var(--accent)"></span>all answers</span>
+        <span><span class="swatch" style="background:var(--text-faint)"></span>last 100</span>
+      </div>
+    </div>
+    <div class="chart-box" id="chartBox">
+      <div class="chart-empty" id="chartEmpty">Answer three to see the line.</div>
+    </div>
+    <p class="chart-note" id="chartNote"></p>
+  </section>
+
+  <footer>
+    <p>Every key here was read out of the real Claude Code on this machine, version <code>2.1.260</code>. Your own changes live in <code>~/.claude/keybindings.json</code> &mdash; if that file is empty, these are your keys.</p>
+    <p>Want the list inside Claude Code? Press <code>?</code> at the prompt.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- the deck ----------------
+     answer: canonical key string. Two keys in a row are joined by a space.
+     Modifiers always in this order: ctrl, alt, shift. Letters lowercase.
+     tier 1 = Core, 2 = Level up, 3 = All.
+  ------------------------------------------- */
+  var DECK = [
+    /* ----- move the cursor ----- */
+    { id:"c_home", tier:1, cat:"Move the cursor", task:"Jump to the start of the line", answer:"ctrl+a", act:"home" },
+    { id:"c_end", tier:1, cat:"Move the cursor", task:"Jump to the end of the line", answer:"ctrl+e", act:"end" },
+    { id:"c_up", tier:1, cat:"Move the cursor", task:"Move the cursor up one line", answer:"ctrl+p", alt:["up"], act:"up", note:"On the top line it fetches your last prompt instead. The Up arrow runs the very same code." },
+    { id:"c_down", tier:1, cat:"Move the cursor", task:"Move the cursor down one line", answer:"ctrl+n", alt:["down"], act:"down", note:"On the bottom line it steps forward through your prompts. The Down arrow runs the very same code." },
+    { id:"c_left", tier:2, cat:"Move the cursor", task:"Move one character left, no arrow key", answer:"ctrl+b", act:"left" },
+    { id:"c_right", tier:2, cat:"Move the cursor", task:"Move one character right, no arrow key", answer:"ctrl+f", act:"right" },
+    { id:"w_left", tier:2, cat:"Move the cursor", task:"Jump one whole word left", answer:"alt+b", act:"wleft", note:"Alt is Option on a Mac." },
+    { id:"w_right", tier:2, cat:"Move the cursor", task:"Jump one whole word right", answer:"alt+f", act:"wright" },
+    { id:"cw_left", tier:3, cat:"Move the cursor", task:"Jump one word left, with an arrow key", answer:"ctrl+left", act:"wleft" },
+    { id:"cw_right", tier:3, cat:"Move the cursor", task:"Jump one word right, with an arrow key", answer:"ctrl+right", act:"wright" },
+    { id:"k_home", tier:3, cat:"Move the cursor", task:"Start of the line, one big key", answer:"home", act:"home" },
+    { id:"k_end", tier:3, cat:"Move the cursor", task:"End of the line, one big key", answer:"end", act:"end" },
+
+    /* ----- delete text ----- */
+    { id:"d_word", tier:1, cat:"Delete text", task:"Delete the word before the cursor", answer:"ctrl+w", act:"delwordback" },
+    { id:"d_start", tier:1, cat:"Delete text", task:"Delete everything back to the start of the line", answer:"ctrl+u", act:"deltostart" },
+    { id:"d_all", tier:1, cat:"Delete text", task:"Wipe the whole prompt box", answer:"ctrl+c", act:"clear", note:"On an empty box, press it again to quit." },
+    { id:"d_end", tier:2, cat:"Delete text", task:"Delete from the cursor to the end of the line", answer:"ctrl+k", act:"deltoend" },
+    { id:"d_char", tier:2, cat:"Delete text", task:"Delete the one character under the cursor", answer:"ctrl+d", act:"delchar", note:"Only while the box has text. On an empty box this quits." },
+    { id:"d_wordfwd", tier:2, cat:"Delete text", task:"Delete the word after the cursor", answer:"alt+d", act:"delwordfwd" },
+    { id:"yank", tier:2, cat:"Delete text", task:"Paste back the text you just deleted", answer:"ctrl+y", act:"yank" },
+    { id:"d_back", tier:3, cat:"Delete text", task:"Delete one character back, no Backspace key", answer:"ctrl+h", act:"delback" },
+    { id:"d_wordbs", tier:3, cat:"Delete text", task:"Delete the word before, using Backspace", answer:"alt+backspace", act:"delwordback" },
+    { id:"yankpop", tier:3, cat:"Delete text", task:"Swap in the thing you deleted before that", answer:"alt+y", act:"yankpop" },
+    { id:"undo", tier:3, cat:"Delete text", task:"Undo your last edit in the box", answer:"ctrl+_", alt:["ctrl+-"], act:"undo", note:"Ctrl and minus does the same." },
+    { id:"clearin", tier:1, cat:"Delete text", task:"Clear the input box in one press", answer:"ctrl+l", act:"clear" },
+
+    /* ----- new line and send ----- */
+    { id:"nl_j", tier:1, cat:"New lines", task:"Add a new line without sending", answer:"ctrl+j", act:"newline", note:"This one works in every terminal." },
+    { id:"nl_bs", tier:2, cat:"New lines", task:"New line, the two-key way", answer:"\\ enter", act:"newline", note:"Type a backslash, then press Enter." },
+    { id:"nl_shift", tier:2, cat:"New lines", task:"New line with Shift, after setup", answer:"shift+enter", act:"newline", note:"Run /terminal-setup once to switch this on." },
+
+    /* ----- tell Claude what to do ----- */
+    { id:"stop", tier:1, cat:"Tell Claude what to do", task:"Stop Claude right now", answer:"escape", act:"stop" },
+    { id:"rewind", tier:1, cat:"Tell Claude what to do", task:"Go back to an earlier point in the chat", answer:"escape escape", act:"rewind", note:"Two taps. Works on an empty box." },
+    { id:"mode", tier:1, cat:"Tell Claude what to do", task:"Change how much Claude may do on its own", answer:"shift+tab", act:"mode" },
+    { id:"quit", tier:1, cat:"Tell Claude what to do", task:"Quit Claude Code", answer:"ctrl+d", act:"quit", note:"On an empty box." },
+    { id:"tab_acc", tier:1, cat:"Tell Claude what to do", task:"Take the suggestion it is showing you", answer:"tab", act:"accept" },
+    { id:"bg", tier:2, cat:"Tell Claude what to do", task:"Push the running command into the background", answer:"ctrl+b", act:"bg", note:"Only while a command is running." },
+    { id:"editor", tier:2, cat:"Tell Claude what to do", task:"Write your prompt in your real editor", answer:"ctrl+g", act:"editor" },
+    { id:"stash", tier:2, cat:"Tell Claude what to do", task:"Put this half-written prompt aside", answer:"ctrl+s", act:"stash" },
+    { id:"model", tier:2, cat:"Tell Claude what to do", task:"Pick a different model", answer:"alt+p", act:"model" },
+    { id:"think", tier:2, cat:"Tell Claude what to do", task:"Turn extra thinking on or off", answer:"alt+t", act:"think" },
+    { id:"fast", tier:2, cat:"Tell Claude what to do", task:"Turn fast mode on or off", answer:"alt+o", act:"fast" },
+    { id:"img", tier:2, cat:"Tell Claude what to do", task:"Paste a picture from the clipboard", answer:"alt+v", act:"img", note:"On Windows it is Alt. On a Mac it is Ctrl+V." },
+    { id:"wf", tier:3, cat:"Tell Claude what to do", task:"Turn the workflow keyword on or off", answer:"alt+w", act:"wf" },
+    { id:"killag", tier:3, cat:"Tell Claude what to do", task:"Stop every agent at once", answer:"ctrl+x ctrl+k", act:"kill" },
+    { id:"talk", tier:3, cat:"Tell Claude what to do", task:"Hold this to talk instead of type", answer:"space", act:"talk", note:"Only when the box is empty." },
+    { id:"queue", tier:3, cat:"Tell Claude what to do", task:"Line this message up for after Claude finishes", answer:"ctrl+x enter", act:"queue" },
+
+    /* ----- look at things ----- */
+    { id:"transcript", tier:1, cat:"Look at things", task:"Show the full transcript", answer:"ctrl+o", act:"transcript" },
+    { id:"todos", tier:1, cat:"Look at things", task:"Show the todo list", answer:"ctrl+t", act:"todos" },
+    { id:"shortcuts", tier:2, cat:"Look at things", task:"Show the shortcut list", answer:"?", act:"help", note:"On an empty box." },
+    { id:"artifact", tier:2, cat:"Look at things", task:"Open the artifact you made last", answer:"ctrl+]", act:"artifact" },
+    { id:"brief", tier:3, cat:"Look at things", task:"Show the brief", answer:"ctrl+shift+b", act:"brief" },
+    { id:"diff_up", tier:3, cat:"Look at things", task:"Step up the list of changed files", answer:"ctrl+up", act:"diffup" },
+    { id:"diff_dn", tier:3, cat:"Look at things", task:"Step down the list of changed files", answer:"ctrl+down", act:"diffdn" },
+
+    /* ----- inside the transcript ----- */
+    { id:"t_all", tier:3, cat:"Inside the transcript", task:"Show every hidden line", answer:"ctrl+e", act:"tall" },
+    { id:"t_exit", tier:3, cat:"Inside the transcript", task:"Leave the transcript", answer:"q", act:"texit" },
+    { id:"t_line_dn", tier:3, cat:"Inside the transcript", task:"Down one line, Vim style", answer:"j", act:"tdn" },
+    { id:"t_line_up", tier:3, cat:"Inside the transcript", task:"Up one line, Vim style", answer:"k", act:"tup" },
+    { id:"t_top", tier:3, cat:"Inside the transcript", task:"Jump to the very top", answer:"g", act:"ttop" },
+    { id:"t_bot", tier:3, cat:"Inside the transcript", task:"Jump to the very bottom", answer:"shift+g", act:"tbot" },
+    { id:"t_half_dn", tier:3, cat:"Inside the transcript", task:"Half a page down", answer:"ctrl+d", act:"thdn" },
+    { id:"t_half_up", tier:3, cat:"Inside the transcript", task:"Half a page up", answer:"ctrl+u", act:"thup" },
+    { id:"t_page_dn", tier:3, cat:"Inside the transcript", task:"A whole page down", answer:"ctrl+f", act:"tpdn" },
+    { id:"t_page_up", tier:3, cat:"Inside the transcript", task:"A whole page up", answer:"ctrl+b", act:"tpup" },
+
+    /* ----- old prompts ----- */
+    { id:"h_search", tier:1, cat:"Old prompts", task:"Search everything you have typed before", answer:"ctrl+r", act:"search" },
+    { id:"s_next", tier:3, cat:"Old prompts", task:"In the search, jump to the next hit", answer:"ctrl+r", act:"snext" },
+    { id:"s_scope", tier:3, cat:"Old prompts", task:"In the search, change what it looks through", answer:"ctrl+s", act:"sscope" },
+    { id:"s_take", tier:3, cat:"Old prompts", task:"In the search, drop the hit into the box", answer:"tab", act:"stake" },
+    { id:"s_run", tier:3, cat:"Old prompts", task:"In the search, run the hit straight away", answer:"enter", act:"srun" },
+
+    /* ----- the Ctrl+X combos ----- */
+    { id:"x_editor", tier:3, cat:"The Ctrl+X combos", task:"Open your editor, the long way", answer:"ctrl+x ctrl+e", act:"editor" },
+    { id:"x_panel", tier:3, cat:"The Ctrl+X combos", task:"Show or hide the panel above the prompt", answer:"ctrl+x ctrl+a", act:"panel" },
+    { id:"x_focus", tier:3, cat:"The Ctrl+X combos", task:"Jump into the panel above the prompt", answer:"ctrl+x tab", act:"panelfocus" },
+    { id:"x_bg", tier:3, cat:"The Ctrl+X combos", task:"Background the task, the long way", answer:"ctrl+x ctrl+b", act:"bg" },
+    { id:"x_diff", tier:3, cat:"The Ctrl+X combos", task:"Change what the diff compares against", answer:"ctrl+x b", act:"diffbase" }
+  ];
+
+  // Why you would ever press it. Plain words. Never names the key.
+  var WHY = {
+    c_home: "Your cursor lands at the very front of the line. Use it when you typed a long prompt and want to add a word at the start. Much faster than holding the left arrow.",
+    c_end: "Your cursor lands right after the last letter. This is the partner of the jump to the front. Together they are the two moves you will use most.",
+    c_up: "Walks the cursor up one line and keeps roughly the same spot across. Your hand stays on the letter keys. Only when the cursor is already on the top line does it reach back for your last prompt instead. The Up arrow does exactly this too, so learn whichever you like, but this one is closer to your fingers.",
+    c_down: "Walks the cursor down one line. The partner of the one above. Together they are how you move around a long prompt without the mouse and without leaving the home row. On the bottom line it steps forward through your old prompts instead.",
+    c_left: "One character left, and your hand never leaves the letter keys. Arrow keys sit far away, so your hand has to travel and then come back.",
+    c_right: "One character right. Handy right after you fix a typo and want to step back over the letter you just corrected.",
+    w_left: "Skips a whole word at a time instead of a letter. In a long sentence this is five times fewer presses. This is the real speed win.",
+    w_right: "Skips forward a whole word. Use both word jumps to land next to the word you want to change, then delete just that word.",
+    cw_left: "The same word jump, but done with an arrow key. Some terminals eat the letter version, so it is good to know both.",
+    cw_right: "The arrow key twin of the forward word jump. Pick whichever one your fingers like.",
+    k_home: "One big key on its own. No modifier to hold. Slower to reach but nothing to remember.",
+    k_end: "The other big key. Good when you are away from your usual keyboard and cannot recall the letter version.",
+    d_word: "Rubs out the last word in one press. This is the most used delete of them all: you mistype one word, you kill it, you type it again. No holding Backspace.",
+    d_start: "Everything from the cursor back to the front of the line is gone. Use it to scrap a bad opening and keep the good ending. The deleted text is kept, so you can paste it back.",
+    d_all: "Empties the box so you can start over with a clean head. If the box is already empty, a second press leaves Claude Code.",
+    d_end: "Everything from the cursor to the end of the line is gone. The partner of the delete-backwards one. It is also kept for pasting back.",
+    d_char: "Kills the single character sitting under the cursor, not the one behind it. Use it when you overshot by one letter and do not want to move again.",
+    d_wordfwd: "Kills the next word forward, ahead of the cursor. Great when you want to change the middle of a sentence and leave the start alone.",
+    yank: "Brings back the last chunk you deleted, wherever your cursor is now. So deleting is also cutting: kill a phrase, move, paste it back. This is how you move text without a mouse.",
+    d_back: "The same job as Backspace, without stretching for it. Nice when your hands are already resting on the letter keys.",
+    d_wordbs: "The word delete, done with the Backspace key. Some keyboards make this one easier to hit than the letter version.",
+    yankpop: "Press it right after a paste-back and it swaps in the thing you deleted before that. Claude Code keeps a small stack of what you cut, so you can reach back more than one step.",
+    undo: "Puts back your last edit inside the box. This is for the text you are writing, not for changes to your files.",
+    clearin: "Empties the box in one press with nothing to confirm and no chance of quitting by mistake. This is the safe one of the two ways to clear.",
+    nl_j: "Adds a line break inside your prompt instead of sending it. This is how you write a list or a paragraph in one message. It works everywhere, on every terminal, with no setup.",
+    nl_bs: "The old trick that works when nothing else does: put a backslash at the end, then press Enter. The backslash disappears and you get a new line.",
+    nl_shift: "The one your fingers already expect from every chat app. It needs a one-off setup command, because a bare terminal cannot tell Shift and Enter apart on its own.",
+    queue: "Sends your message into a waiting line instead of interrupting. Claude finishes the current job, then picks yours up. Use it when you think of the next step mid-run.",
+    stop: "Pulls the handbrake. Claude stops in the middle of whatever it is doing, and nothing is lost. Press this the moment you see it heading the wrong way.",
+    rewind: "Opens a list of your earlier messages so you can go back to one and start again from there. It can put your files back too. This is your undo for a whole conversation.",
+    mode: "Walks through the permission modes: ask me every time, accept edits by itself, or plan only and change nothing. The footer tells you which one you are in. Check it before a big job.",
+    quit: "Ends the session and gives you your shell back. Your chat is saved, so you can pick it up later.",
+    tab_acc: "Takes the file name or command Claude Code is offering. Saves typing long paths and saves getting them wrong.",
+    bg: "The command keeps running, but you get your prompt back straight away. Use it for a server or a long build you do not want to sit and watch.",
+    editor: "Opens your normal editor for the prompt. Worth it for a long, careful message where you want proper editing, search and replace, and no risk of sending it early.",
+    stash: "Tucks the half-written prompt out of sight so you can ask something quick first. Your draft is not lost.",
+    model: "Swaps which model you are talking to. Use a bigger one for hard thinking and a small one for simple edits.",
+    think: "Turns on the longer, slower reasoning. Use it for a tricky bug. Turn it off for small jobs, because it costs time.",
+    fast: "Same model, quicker replies. Good while you are going back and forth on small changes.",
+    img: "Puts a screenshot straight into your message. This is the fastest way to show Claude a broken screen or a design instead of describing it.",
+    wf: "Switches on the keyword that lets Claude fan work out to several agents at once. Off by default, because it is a big job.",
+    killag: "Stops every helper agent in one press. Your safety switch when a fan-out job goes wrong.",
+    talk: "Hold it down and speak, let go and it types what you said. Only works when the box is empty, so it never eats a space you meant to type.",
+    transcript: "Opens the whole record, including the parts folded away. Use it to see exactly what a tool did or what a file looked like.",
+    todos: "Shows the checklist Claude is working through. This is how you see what it thinks is left to do, and whether it is stuck.",
+    shortcuts: "Claude Code shows you its own key list. Your safety net. Press it when you forget one instead of guessing.",
+    artifact: "Reopens the last page you built together, without hunting for the link.",
+    brief: "A short summary panel of the session. Use it to catch up on a long run without reading everything.",
+    diff_up: "Walks up the list of files Claude changed. Use it to review the work one file at a time.",
+    diff_dn: "Walks down the same list of changed files.",
+    t_all: "The transcript hides long output by default. This unfolds all of it, so you can read the full thing.",
+    t_exit: "Closes the transcript and puts you back at your prompt. One letter, no modifier.",
+    t_line_dn: "One line down. These are the Vim movement keys, so they will feel familiar if you use Vim.",
+    t_line_up: "One line up. Sits right next to the down key, so your fingers barely move.",
+    t_top: "Straight to the first line of the whole transcript.",
+    t_bot: "Straight to the newest line at the bottom. Note the capital letter, so you have to hold Shift.",
+    t_half_dn: "Half a screen down. Half a page is easier to follow than a whole one, because some of what you just read stays on screen.",
+    t_half_up: "Half a screen back up. The partner of the half page down.",
+    t_page_dn: "A full screen down. Use it to skim fast when you know roughly where you are going.",
+    t_page_up: "A full screen back up.",
+    h_search: "Type a few letters and it hunts through every prompt you have ever written. Use it to find that long careful prompt from last week instead of writing it again.",
+    s_next: "Inside the search, this walks to the next matching prompt. Press it over and over to run down the list of hits.",
+    s_scope: "Changes whether the search looks at this project only or everything you have ever typed. Widen it when you cannot find the prompt.",
+    s_take: "Drops the hit into your box so you can edit it before sending. Safer than running it right away.",
+    s_run: "Sends the hit straight to Claude with no edit. Fast, but read it first.",
+    x_editor: "The two-step way into your editor. It exists because this key family follows the old Emacs habit, and some people already have it in their fingers.",
+    x_panel: "Shows or hides the small panel that sits above your prompt.",
+    x_focus: "Moves your keys into that panel so you can pick things in it.",
+    x_bg: "The two-step way to background a running task. Same result as the short one.",
+    x_diff: "Changes what the diff view compares your work against, for example the branch you started from."
+  };
+
+  var CATS = ["Move the cursor", "Delete text", "New lines", "Tell Claude what to do",
+              "Look at things", "Inside the transcript", "Old prompts", "The Ctrl+X combos"];
+
+  var TIER_WHY = {
+    1: "The ones you will use every single day. Learn these and nothing else, and you are already fast.",
+    2: "Worth the effort once the core feels easy. Word jumps, cut and paste back, and the mode switches.",
+    3: "Everything the app has. Includes the transcript keys, the prompt search keys and the Ctrl+X family."
+  };
+
+  // Keys you cannot press on this page. Two reasons, same fix: the type-it box.
+  // Chrome and Edge keep the first four for themselves and preventDefault cannot
+  // stop them. Ctrl+] is worse: on a German QWERTZ keyboard the ] needs AltGr,
+  // and AltGr is Ctrl+Alt, so the combination cannot be made at all.
+  var BROWSER_EATS = {
+    "ctrl+w": 1, "ctrl+t": 1, "ctrl+n": 1, "ctrl+shift+b": 1, "ctrl+]": 1
+  };
+
+  // Said out loud on the drill, so you know it is the keyboard and not you.
+  var HARD_NOTE = {
+    artifact: "On a German QWERTZ keyboard the ] needs AltGr, and AltGr is the same as Ctrl+Alt, so this shortcut cannot be pressed at all. Give it a new key in ~/.claude/keybindings.json.",
+    d_word: "Your browser keeps this key for itself. In a real terminal it works fine.",
+    todos: "Your browser keeps this key for itself. In a real terminal it works fine.",
+    c_down: "Your browser keeps this key for itself. In a real terminal it works fine.",
+    brief: "Your browser keeps this key for itself. In a real terminal it works fine."
+  };
+
+  var BY_ID = {};
+  DECK.forEach(function (d) { BY_ID[d.id] = d; });
+
+  /* ---------------- state ---------------- */
+  var STORE_KEY = "claude-drills-v1";
+  var stats = {};
+  var score = { right: 0, total: 0, streak: 0, best: 0 };
+  var WIN = 100;
+  var history = [];
+  var recent = [];
+  var peek = false;
+  var tier = 1;
+  var current = null;
+  var revealed = false;
+  var locked = false;
+  var eatenNow = false;    // this drill is one the browser steals
+  var step = 0;            // how far into a two-key answer we are
+  var stepTimer = null;
+  var pressed = [];        // keys shown in the readout so far
+  var timerOn = false;
+  var timerSecs = 5;
+  var deadline = 0;
+  var tickTimer = null;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      if (o && o.stats) stats = o.stats;
+      if (o && o.score) score = o.score;
+      if (o && o.history) history = o.history;
+      if (o && o.tier) tier = o.tier;
+      if (o && o.timer) {
+        timerOn = !!o.timer.on;
+        if (o.timer.secs > 0) timerSecs = o.timer.secs;
+      }
+    } catch (e) { /* private window or blocked storage: start fresh */ }
+    if (tier !== 1 && tier !== 2 && tier !== 3) tier = 1;
+    // One source of truth: every number on the page is counted from history.
+    if (score.total !== history.length) {
+      score.total = history.length;
+      score.right = history.reduce(function (a, b) { return a + b; }, 0);
+    }
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        stats: stats, score: score,
+        history: history.slice(-600),
+        tier: tier,
+        timer: { on: timerOn, secs: timerSecs }
+      }));
+    } catch (e) { /* nothing to do */ }
+  }
+  function logAttempt(ok) {
+    history.push(ok ? 1 : 0);
+    if (history.length > 600) history = history.slice(-600);
+  }
+  function stat(id) {
+    if (!stats[id]) stats[id] = { right: 0, wrong: 0, streak: 0, last: "", h: [], seen: 0 };
+    if (!stats[id].h) stats[id].h = [];
+    if (!stats[id].seen) stats[id].seen = 0;
+    return stats[id];
+  }
+  function shown(id) {
+    var s = stats[id];
+    return (s && s.h) ? s.h : [];
+  }
+  function ratio(id) {
+    var h = shown(id);
+    if (!h.length) return null;
+    return h.reduce(function (a, b) { return a + b; }, 0) / h.length;
+  }
+  function stateOf(id) {
+    var s = stats[id];
+    if (!s || (s.right === 0 && s.wrong === 0)) return "new";
+    if (s.last === "wrong") return "shaky";
+    var r = ratio(id);
+    if (r !== null && shown(id).length >= 3) {
+      if (r >= 0.8) return "solid";
+      if (r >= 0.5) return "learning";
+      return "shaky";
+    }
+    if (s.streak >= 2) return "solid";
+    return "learning";
+  }
+
+  /* ---------------- the key language ----------------
+     One canonical string for a key press, used for both the real keyboard and
+     the type-it box. So there is only ever one thing to compare.
+  --------------------------------------------------- */
+  var NAMED = {
+    "Enter": "enter", "Tab": "tab", "Escape": "escape", "Backspace": "backspace",
+    "Delete": "delete", "ArrowUp": "up", "ArrowDown": "down", "ArrowLeft": "left",
+    "ArrowRight": "right", "Home": "home", "End": "end", "PageUp": "pageup",
+    "PageDown": "pagedown", " ": "space"
+  };
+  var TYPED_ALIAS = {
+    "control": "ctrl", "ctl": "ctrl",
+    "option": "alt", "opt": "alt", "meta": "alt",
+    "esc": "escape", "return": "enter", "bs": "backspace", "del": "delete",
+    "arrowup": "up", "arrowdown": "down", "arrowleft": "left", "arrowright": "right",
+    "backslash": "\\", "sp": "space", "spacebar": "space", "minus": "-",
+    "underscore": "_", "questionmark": "?", "rightbracket": "]", "rbracket": "]"
+  };
+  var MODS = { ctrl: 1, alt: 1, shift: 1 };
+
+  // A real key press turned into a canonical string. null = not an answer.
+  function canonEvent(e) {
+    var k = e.key;
+    if (k === "Control" || k === "Shift" || k === "Alt" || k === "Meta" ||
+        k === "CapsLock" || k === "AltGraph" || k === "Dead" || !k) return null;
+    var base, letter = false;
+    if (NAMED[k]) base = NAMED[k];
+    else if (k.length === 1) {
+      base = k.toLowerCase();
+      letter = /^[a-z]$/.test(base);
+    } else base = k.toLowerCase();
+
+    var out = [];
+    if (e.ctrlKey) out.push("ctrl");
+    if (e.altKey) out.push("alt");
+    // Shift only counts on letters and named keys. On punctuation the layout
+    // already decided the character, so ? is just ? and not shift+/.
+    if (e.shiftKey && (letter || !!NAMED[k] || k.length > 1)) out.push("shift");
+    out.push(base);
+    return out.join("+");
+  }
+
+  // What the user typed in the fallback box turned into the same shape.
+  function canonTyped(s) {
+    if (!s) return "";
+    // "ctrl + w" is the same as "ctrl+w": spaces around a plus are just spacing.
+    var steps = String(s).trim().toLowerCase()
+      .replace(/\s*\+\s*/g, "+").replace(/\s+/g, " ").split(" ");
+    var done = [];
+    for (var i = 0; i < steps.length; i++) {
+      var raw = steps[i];
+      if (!raw) continue;
+      var bits;
+      if (raw === "+") bits = ["+"];
+      else {
+        bits = raw.split("+");
+        // "ctrl++" means the plus key: an empty tail is really a plus.
+        for (var b = 0; b < bits.length; b++) if (bits[b] === "") bits[b] = "+";
+      }
+      var mods = {}, base = "";
+      for (var j = 0; j < bits.length; j++) {
+        var t = TYPED_ALIAS[bits[j]] || bits[j];
+        if (MODS[t] && j < bits.length - 1) mods[t] = 1;
+        else base = t;
+      }
+      var out = [];
+      if (mods.ctrl) out.push("ctrl");
+      if (mods.alt) out.push("alt");
+      if (mods.shift) out.push("shift");
+      out.push(base);
+      done.push(out.join("+"));
+    }
+    return done.join(" ");
+  }
+
+  function answers(d) { return [d.answer].concat(d.alt || []); }
+  function stepsOf(a) { return a.split(" "); }
+  // Every answer this drill accepts, as a list of step lists.
+  function stepLists(d) { return answers(d).map(stepsOf); }
+
+  // Bare spelling of one step: "ctrl+shift+b" -> "b". The type-it box uses this
+  // on the drills the browser steals, so the user types the key on its own.
+  function bareStep(a) {
+    if (a.length > 1 && a.charAt(a.length - 1) === "+") return "+";
+    var p = a.split("+");
+    return p[p.length - 1] || a;
+  }
+  function bareLists(d) {
+    return stepLists(d).map(function (l) { return l.map(bareStep); });
+  }
+  // The accepted answer the browser steals. That is the one the label describes.
+  function bareOwner(d) {
+    var a = answers(d).filter(function (x) { return BROWSER_EATS[x]; });
+    return a.length ? a[0] : d.answer;
+  }
+  // "ctrl+shift+b" -> "ctrl + shift + ". Empty when the key has no modifier.
+  function modPrefix(a) {
+    var p = a.split("+").filter(function (x) { return x !== ""; });
+    if (p.length < 2) return "";
+    return p.slice(0, p.length - 1).join(" + ") + " + ";
+  }
+
+  // Pretty label for one canonical key, for the readout.
+  var PRETTY = {
+    ctrl: "Ctrl", alt: "Alt", shift: "Shift", enter: "Enter", tab: "Tab",
+    escape: "Esc", backspace: "Backspace", "delete": "Delete", up: "Up",
+    down: "Down", left: "Left", right: "Right", home: "Home", end: "End",
+    pageup: "PgUp", pagedown: "PgDn", space: "Space"
+  };
+  function prettyKey(c) {
+    return c.split("+").map(function (p) {
+      if (PRETTY[p]) return PRETTY[p];
+      return p.length === 1 ? p.toUpperCase() : p;
+    }).join("+");
+  }
+  function prettyAnswer(a) { return stepsOf(a).map(prettyKey).join(" then "); }
+  function keysLabel(d) {
+    return answers(d).map(prettyAnswer).join("  or  ");
+  }
+
+  /* ---------------- the mock prompt ---------------- */
+  var SAMPLE = "fix the login bug in auth.ts\nand add a test for the empty password case";
+  var MODES = ["normal", "accept edits", "plan"];
+  var mtext, moff, mkill, mkill2, mmode, mflash;
+
+  function resetMock() {
+    mtext = SAMPLE;
+    moff = 18;            // sits on the b of "bug"
+    mkill = "";
+    mkill2 = "";
+    mmode = 0;
+    mflash = "";
+  }
+  function lineStart(t, o) { return t.lastIndexOf("\n", o - 1) + 1; }
+  function lineEnd(t, o) {
+    var e = t.indexOf("\n", o);
+    return e < 0 ? t.length : e;
+  }
+  function isWordChar(c) { return /[A-Za-z0-9_]/.test(c); }
+  function wordLeft(t, o) {
+    var i = o;
+    while (i > 0 && !isWordChar(t.charAt(i - 1))) i--;
+    while (i > 0 && isWordChar(t.charAt(i - 1))) i--;
+    return i;
+  }
+  function wordRight(t, o) {
+    var i = o, n = t.length;
+    while (i < n && !isWordChar(t.charAt(i))) i++;
+    while (i < n && isWordChar(t.charAt(i))) i++;
+    return i;
+  }
+  function cut(txt, where) {
+    if (!txt) return;
+    mkill2 = mkill;
+    mkill = txt;
+  }
+  function applyAct(act, note) {
+    mflash = "";
+    var s, e, i;
+    switch (act) {
+      case "home": moff = lineStart(mtext, moff); break;
+      case "end": moff = lineEnd(mtext, moff); break;
+      case "left": if (moff > 0) moff--; break;
+      case "right": if (moff < mtext.length) moff++; break;
+      case "wleft": moff = wordLeft(mtext, moff); break;
+      case "wright": moff = wordRight(mtext, moff); break;
+      case "up":
+        s = lineStart(mtext, moff);
+        if (s === 0) { mflash = "no line above, so it fetched your last prompt"; break; }
+        var ps = lineStart(mtext, s - 1);
+        moff = Math.min(ps + (moff - s), s - 1);
+        break;
+      case "down":
+        e = lineEnd(mtext, moff);
+        if (e === mtext.length) { mflash = "no line below, so it stepped forward in your prompts"; break; }
+        s = lineStart(mtext, moff);
+        var ne = lineEnd(mtext, e + 1);
+        moff = Math.min(e + 1 + (moff - s), ne);
+        break;
+      case "delwordback":
+        i = wordLeft(mtext, moff);
+        cut(mtext.slice(i, moff));
+        mtext = mtext.slice(0, i) + mtext.slice(moff);
+        moff = i;
+        break;
+      case "delwordfwd":
+        i = wordRight(mtext, moff);
+        cut(mtext.slice(moff, i));
+        mtext = mtext.slice(0, moff) + mtext.slice(i);
+        break;
+      case "deltoend":
+        e = lineEnd(mtext, moff);
+        cut(mtext.slice(moff, e));
+        mtext = mtext.slice(0, moff) + mtext.slice(e);
+        break;
+      case "deltostart":
+        s = lineStart(mtext, moff);
+        cut(mtext.slice(s, moff));
+        mtext = mtext.slice(0, s) + mtext.slice(moff);
+        moff = s;
+        break;
+      case "delchar":
+        if (moff < mtext.length) mtext = mtext.slice(0, moff) + mtext.slice(moff + 1);
+        break;
+      case "delback":
+        if (moff > 0) { mtext = mtext.slice(0, moff - 1) + mtext.slice(moff); moff--; }
+        break;
+      case "yank":
+        if (mkill) { mtext = mtext.slice(0, moff) + mkill + mtext.slice(moff); moff += mkill.length; }
+        else mflash = "nothing cut yet, so nothing came back";
+        break;
+      case "yankpop":
+        if (mkill2) { var sw = mkill; mkill = mkill2; mkill2 = sw; mflash = "now holding: " + mkill; }
+        else mflash = "only one thing was cut, so there is nothing older";
+        break;
+      case "undo": mflash = "your last edit in the box came back"; break;
+      case "clear": mtext = ""; moff = 0; mflash = "box emptied"; break;
+      case "newline":
+        mtext = mtext.slice(0, moff) + "\n" + mtext.slice(moff);
+        moff++;
+        break;
+      case "send": mflash = "message sent"; mtext = ""; moff = 0; break;
+      case "queue": mflash = "message put in the queue"; mtext = ""; moff = 0; break;
+      case "mode": mmode = (mmode + 1) % MODES.length; mflash = "mode is now: " + MODES[mmode]; break;
+      case "stop": mflash = "Claude stopped"; break;
+      case "rewind": mflash = "picking an earlier message to go back to"; break;
+      case "quit": mflash = "session closed, your shell is back"; break;
+      case "accept": mflash = "suggestion taken"; break;
+      case "bg": mflash = "command moved to the background"; break;
+      case "editor": mflash = "your editor opened with this prompt in it"; break;
+      case "stash": mflash = "draft put aside"; mtext = ""; moff = 0; break;
+      case "model": mflash = "model picker open"; break;
+      case "think": mflash = "extra thinking toggled"; break;
+      case "fast": mflash = "fast mode toggled"; break;
+      case "img": mflash = "picture from the clipboard added"; break;
+      case "wf": mflash = "workflow keyword toggled"; break;
+      case "kill": mflash = "every agent stopped"; break;
+      case "talk": mflash = "listening while you hold it"; break;
+      case "transcript": mflash = "transcript open"; break;
+      case "todos": mflash = "todo list open"; break;
+      case "help": mflash = "shortcut list open"; break;
+      case "artifact": mflash = "last artifact opened"; break;
+      case "brief": mflash = "brief open"; break;
+      case "diffup": mflash = "moved up the changed files"; break;
+      case "diffdn": mflash = "moved down the changed files"; break;
+      case "tall": mflash = "transcript unfolded"; break;
+      case "texit": mflash = "back at your prompt"; break;
+      case "tdn": mflash = "one line down"; break;
+      case "tup": mflash = "one line up"; break;
+      case "ttop": mflash = "top of the transcript"; break;
+      case "tbot": mflash = "bottom of the transcript"; break;
+      case "thdn": mflash = "half a page down"; break;
+      case "thup": mflash = "half a page up"; break;
+      case "tpdn": mflash = "a page down"; break;
+      case "tpup": mflash = "a page up"; break;
+      case "search": mflash = "prompt search open"; break;
+      case "histprev": mflash = "your previous prompt is back in the box"; break;
+      case "histnext": mflash = "stepped forward in your prompts"; break;
+      case "snext": mflash = "next matching prompt"; break;
+      case "sscope": mflash = "search widened"; break;
+      case "stake": mflash = "hit dropped in the box"; break;
+      case "srun": mflash = "hit sent straight away"; break;
+      case "panel": mflash = "panel above the prompt toggled"; break;
+      case "panelfocus": mflash = "your keys are in the panel now"; break;
+      case "diffbase": mflash = "diff now compares against something else"; break;
+      default: break;
+    }
+    if (moff < 0) moff = 0;
+    if (moff > mtext.length) moff = mtext.length;
+    if (act === "send" || act === "queue" || act === "stash" || act === "clear") {
+      // Give the box its sample text back so the next drill has something to chew on.
+      setTimeout(function () {
+        if (!mtext) { mtext = SAMPLE; moff = 18; renderMock(); }
+      }, 700);
+    }
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var mockLog = $("mockLog"), mockText = $("mockText"), mockBox = $("mockBox"),
+      modeLamp = $("modeLamp"), cutBuf = $("cutBuf");
+
+  function renderMock() {
+    // the fake log above the box
+    mockLog.innerHTML = "";
+    var lines = [
+      { c: "said", t: "> can you look at the failing auth test" },
+      { c: "", t: "I read src/auth.ts and found the check runs before the" },
+      { c: "", t: "password is trimmed." },
+      { c: "tool", t: "Read(src/auth.ts)  ·  42 lines" },
+      { c: "tool", t: "Edit(src/auth.ts)  ·  +3 -1" },
+      { c: "", t: "Done. Want a test for the empty password case?" }
+    ];
+    lines.forEach(function (l) {
+      var d = document.createElement("div");
+      if (l.c) d.className = l.c;
+      d.textContent = l.t;
+      mockLog.appendChild(d);
+    });
+    if (mflash) {
+      var f = document.createElement("div");
+      f.className = "flash";
+      f.textContent = mflash;
+      mockLog.appendChild(f);
+    }
+
+    // the box with the cursor drawn in it
+    mockText.innerHTML = "";
+    var before = mtext.slice(0, moff);
+    var at = mtext.charAt(moff);
+    var after = mtext.slice(moff + 1);
+    var b = document.createElement("span");
+    b.textContent = before;
+    mockText.appendChild(b);
+    var c = document.createElement("span");
+    c.className = "cur";
+    if (at === "" || at === "\n") {
+      c.className = "cur eol";
+      c.textContent = " ";
+    } else {
+      c.textContent = at;
+    }
+    mockText.appendChild(c);
+    var a = document.createElement("span");
+    a.textContent = (at === "\n" ? "\n" : "") + after;
+    mockText.appendChild(a);
+
+    modeLamp.className = "mode-lamp" + (mmode ? " hot" : "");
+    modeLamp.textContent = MODES[mmode] + (mmode ? " · shift+tab" : "");
+    cutBuf.innerHTML = "";
+    if (mkill) {
+      cutBuf.appendChild(document.createTextNode("cut: "));
+      var bb = document.createElement("b");
+      bb.textContent = "“" + mkill.slice(0, 26) + (mkill.length > 26 ? "…" : "") + "”";
+      cutBuf.appendChild(bb);
+    } else {
+      cutBuf.textContent = "nothing cut";
+    }
+  }
+
+  /* ---------------- rendering the drill ---------------- */
+  var timebar = $("timebar"), timefill = $("timefill"), timeLeft = $("timeLeft");
+  var readout = $("readout"), verdict = $("verdict"), taskText = $("taskText"),
+      taskCat = $("taskCat"), taskNote = $("taskNote"), taskWhy = $("taskWhy"),
+      warnBox = $("warnBox"), typeIn = $("typeIn"), typeLabel = $("typeLabel"),
+      typeRow = $("typeRow");
+
+  function keyPill(label) {
+    var k = document.createElement("kbd");
+    k.textContent = label;
+    return k;
+  }
+  function sep(txt) {
+    var s = document.createElement("span");
+    s.className = "then";
+    s.textContent = txt;
+    return s;
+  }
+  function showKeys(list, cls) {
+    readout.className = "readout" + (cls ? " is-" + cls : "");
+    readout.innerHTML = "";
+    list.forEach(function (c, i) {
+      if (i) readout.appendChild(sep("then"));
+      readout.appendChild(keyPill(prettyKey(c)));
+    });
+    if (cls === "mid") {
+      readout.appendChild(sep("then"));
+      var w = document.createElement("span");
+      w.className = "waiting";
+      w.textContent = "waiting for the next key…";
+      readout.appendChild(w);
+    }
+  }
+  function clearKeys() {
+    readout.className = "readout";
+    readout.innerHTML = '<span class="placeholder">waiting for keys&hellip;</span>';
+  }
+  function say(text, cls) {
+    verdict.className = "verdict" + (cls ? " " + cls : "");
+    verdict.innerHTML = text || "&nbsp;";
+  }
+
+  function activeDeck() {
+    return DECK.filter(function (d) { return d.tier <= tier; });
+  }
+  function attempts(id) {
+    var s = stats[id];
+    return s ? s.right + s.wrong : 0;
+  }
+  function pick() {
+    var pool = activeDeck();
+    if (pool.length === 1) return pool[0];
+
+    // Coverage first: nothing repeats until every shortcut in the deck has
+    // been asked once. Weighting alone left some never asked at all.
+    var unseen = pool.filter(function (d) { return attempts(d.id) === 0; });
+    if (unseen.length) return unseen[Math.floor(Math.random() * unseen.length)];
+
+    // Then weight by weakness. Anki, cut down to the two parts that matter:
+    // one you keep missing comes back often, and a stale one drifts back in.
+    var hold = Math.min(5, pool.length - 1);
+    var blocked = recent.slice(-hold);
+    var now = history.length;
+    var cand = [], weights = [], sum = 0;
+    pool.forEach(function (d) {
+      if (blocked.indexOf(d.id) !== -1) return;
+      var r = ratio(d.id);
+      if (r === null) r = 0;
+      var w = 1 + 8 * (1 - r);
+      var st = stats[d.id];
+      var since = (st && st.seen) ? now - st.seen : now;
+      w *= 1 + Math.min(2, since / pool.length);
+      cand.push(d); weights.push(w); sum += w;
+    });
+    if (!cand.length) return pool[Math.floor(Math.random() * pool.length)];
+    var roll = Math.random() * sum;
+    for (var i = 0; i < cand.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) return cand[i];
+    }
+    return cand[cand.length - 1];
+  }
+  function setDrill(d) {
+    current = d;
+    recent.push(d.id);
+    if (recent.length > 24) recent = recent.slice(-24);
+    revealed = false;
+    locked = false;
+    resetStep();
+    taskCat.textContent = d.cat;
+    taskText.textContent = d.task;
+    taskNote.textContent = d.note || "";
+    taskNote.hidden = !d.note;
+    taskWhy.innerHTML = WHY[d.id] || "";
+    taskWhy.hidden = !WHY[d.id];
+
+    eatenNow = answers(d).some(function (a) { return BROWSER_EATS[a]; });
+    if (eatenNow) {
+      warnBox.hidden = false;
+      warnBox.textContent = "This one cannot reach the page. Type the plain key in the box below, with no Ctrl and no plus.";
+      typeRow.hidden = false;
+      if (HARD_NOTE[d.id]) warnBox.textContent += " " + HARD_NOTE[d.id];
+      typeLabel.textContent = "Type " + modPrefix(bareOwner(d));
+    } else {
+      warnBox.hidden = true;
+      typeRow.hidden = true;
+    }
+    typeIn.value = "";
+    // On a stolen shortcut the box is the only way in, so put the caret there.
+    // On every other drill the caret must leave, or the real keys never arrive.
+    if (eatenNow) typeIn.focus();
+    else if (document.activeElement === typeIn) typeIn.blur();
+    clearKeys();
+    say("");
+    mockBox.className = "mock-box";
+    renderBoard();
+    startTimer();
+  }
+  function nextDrill() { setDrill(pick()); }
+
+  function resetStep() {
+    step = 0;
+    pressed = [];
+    if (stepTimer) { clearTimeout(stepTimer); stepTimer = null; }
+    if (mockBox) mockBox.className = "mock-box";
+  }
+
+  /* ---------------- speed timer ---------------- */
+  // The clock runs per shortcut. A wrong key does not stop it: you keep trying
+  // until you get it right or the time is gone. Time gone = one miss, same as
+  // any other wrong answer, so the board and the chart stay honest.
+  function stopTimer() {
+    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    timebar.hidden = true;
+    timebar.className = "timebar";
+    timeLeft.textContent = timerOn ? "" : "off";
+  }
+  function startTimer() {
+    stopTimer();
+    if (!timerOn || locked || !current) return;
+    deadline = Date.now() + timerSecs * 1000;
+    timebar.hidden = false;
+    tick();
+    tickTimer = setInterval(tick, 50);
+  }
+  function tick() {
+    var left = deadline - Date.now();
+    if (left < 0) left = 0;
+    var frac = timerSecs > 0 ? left / (timerSecs * 1000) : 0;
+    timefill.style.width = (frac * 100).toFixed(1) + "%";
+    var cls = "timebar";
+    if (frac <= 0.2) cls = "timebar is-bad";
+    else if (frac <= 0.5) cls = "timebar is-warn";
+    timebar.className = cls;
+    timeLeft.textContent = (left / 1000).toFixed(1) + "s";
+    if (left <= 0) {
+      stopTimer();
+      onTimeout();
+    }
+  }
+  function onTimeout() {
+    if (locked || !current) return;
+    locked = true;
+    resetStep();
+    showKeys(stepsOf(current.answer), "bad");
+    scoreWrong();
+    renderStats();
+    drawChart();
+    renderBoard();
+    say("<b>Too slow.</b> It was " + keysLabel(current) + ".", "bad");
+    setTimeout(function () { nextDrill(); }, 1400);
+  }
+  function timerLabel() {
+    $("timerBtn").className = "act" + (timerOn ? " on" : "");
+    $("timerBtn").textContent = timerOn ? "Timer on" : "Timer off";
+  }
+
+  function renderStats() {
+    $("sStreak").textContent = score.streak;
+    $("sBest").textContent = score.best;
+    $("sRight").textContent = score.right;
+    $("sTotal").textContent = score.total;
+    $("sPct").textContent = score.total ? Math.round((score.right / score.total) * 100) + "%" : "—";
+    var win = history.slice(-WIN);
+    if (win.length < 3) {
+      $("sRoll").textContent = "—";
+    } else {
+      var hit = win.reduce(function (a, b) { return a + b; }, 0);
+      $("sRoll").textContent = Math.round((hit / win.length) * 100) + "%";
+    }
+  }
+
+  /* ---------------- accuracy chart ---------------- */
+  var chartBox = $("chartBox"), chartEmpty = $("chartEmpty"), chartNote = $("chartNote");
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function el(name, attrs) {
+    var n = document.createElementNS(SVGNS, name);
+    Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+    return n;
+  }
+  function drawChart() {
+    var n = history.length;
+    if (n < 3) {
+      chartBox.innerHTML = "";
+      chartEmpty.textContent = "Answer " + (3 - n) + " more to see the line.";
+      chartBox.appendChild(chartEmpty);
+      chartNote.textContent = "";
+      return;
+    }
+
+    var cum = [], roll = [], r = 0, t = 0;
+    for (var i = 0; i < n; i++) {
+      r += history[i]; t += 1;
+      cum.push((r / t) * 100);
+      var from = Math.max(0, i - (WIN - 1));
+      var win = history.slice(from, i + 1);
+      var hit = win.reduce(function (a, b) { return a + b; }, 0);
+      roll.push((hit / win.length) * 100);
+    }
+
+    var W = 900, H = 200, L = 40, R = 14, T = 14, B = 26;
+    var iw = W - L - R, ih = H - T - B;
+    var x = function (i) { return L + (n === 1 ? iw / 2 : (i / (n - 1)) * iw); };
+    var y = function (v) { return T + ih - (v / 100) * ih; };
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    svg.appendChild(el("title", {})).textContent = "Accuracy over your answers";
+
+    [0, 25, 50, 75, 100].forEach(function (v) {
+      svg.appendChild(el("line", { "class": v === 0 ? "zero" : "grid", x1: L, x2: W - R, y1: y(v), y2: y(v) }));
+      var lab = el("text", { "class": "tick", x: L - 6, y: y(v) + 3.5, "text-anchor": "end" });
+      lab.textContent = v + "%";
+      svg.appendChild(lab);
+    });
+
+    var line = function (arr) {
+      return arr.map(function (v, i) { return (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); }).join(" ");
+    };
+    svg.appendChild(el("path", { "class": "area", d: line(cum) + " L" + x(n - 1).toFixed(1) + " " + y(0) + " L" + x(0).toFixed(1) + " " + y(0) + " Z" }));
+    svg.appendChild(el("path", { "class": "roll", d: line(roll) }));
+    svg.appendChild(el("path", { "class": "cum", d: line(cum) }));
+    svg.appendChild(el("circle", { "class": "tip", cx: x(n - 1), cy: y(cum[n - 1]), r: 3.5 }));
+
+    var last = el("text", { "class": "tick", x: W - R, y: H - 7, "text-anchor": "end" });
+    last.textContent = "answer " + n;
+    svg.appendChild(last);
+    var first = el("text", { "class": "tick", x: L, y: H - 7 });
+    first.textContent = "answer 1";
+    svg.appendChild(first);
+
+    chartBox.innerHTML = "";
+    chartBox.appendChild(svg);
+    chartNote.textContent = "One step per answer. The dashed line is your last " + WIN +
+      " only, so it reacts faster. Under " + WIN + " answers the two lines sit on top of each other, because there is nothing older to leave out.";
+  }
+
+  /* ---------------- the board ---------------- */
+  var LF = String.fromCharCode(10);
+  var board = $("board");
+  function unlocked(id) {
+    var s = stats[id];
+    return peek || !!(s && s.right > 0);
+  }
+  function meter(solid, total) {
+    var m = document.createElement("div");
+    m.className = "meter";
+    var pct = total ? Math.round((solid / total) * 100) : 0;
+    m.innerHTML = '<span class="num">' + solid + "/" + total + ' solid</span>' +
+                  '<span class="track"><span class="fill" style="width:' + pct + '%"></span></span>';
+    return m;
+  }
+  function renderBoard() {
+    var deck = activeDeck();
+    board.innerHTML = "";
+    var allSolid = 0;
+    CATS.forEach(function (cat) {
+      var items = deck.filter(function (d) { return d.cat === cat; });
+      if (!items.length) return;
+      var solid = items.filter(function (d) { return stateOf(d.id) === "solid"; }).length;
+      allSolid += solid;
+
+      var g = document.createElement("div");
+      g.className = "group";
+      var h = document.createElement("h3");
+      var name = document.createElement("span");
+      name.textContent = cat;
+      h.appendChild(name);
+      var rule = document.createElement("span");
+      rule.className = "rule";
+      h.appendChild(rule);
+      h.appendChild(meter(solid, items.length));
+      g.appendChild(h);
+
+      var chips = document.createElement("div");
+      chips.className = "chips";
+      items.forEach(function (d) {
+        var open = unlocked(d.id);
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip" + (current && current.id === d.id ? " is-current" : "");
+        b.setAttribute("data-state", stateOf(d.id));
+        b.innerHTML = '<span class="what"></span><span class="strip"></span>' +
+                      '<span class="keys' + (open ? '' : ' locked') + '"></span>';
+        b.querySelector(".what").textContent = d.task;
+        b.querySelector(".keys").textContent = open ? keysLabel(d) : "•••";
+        b.title = (WHY[d.id] || d.task).replace(/<\/?b>/g, "") +
+                  (open ? "" : LF + LF + "Keys are hidden. Get it right once to unlock them.");
+        var hh = shown(d.id), strip = b.querySelector(".strip");
+        for (var c = 0; c < 10; c++) {
+          var cell = document.createElement("i");
+          var v = hh[hh.length - 10 + c];
+          if (v === 1) cell.className = "ok";
+          else if (v === 0) cell.className = "bad";
+          strip.appendChild(cell);
+        }
+        var r = ratio(d.id);
+        b.title += LF + LF + (r === null ? "Not shown yet."
+          : "Last " + hh.length + (hh.length === 1 ? " showing: " : " showings: ") +
+            hh.reduce(function (a, x) { return a + x; }, 0) + "/" + hh.length +
+            " right (" + Math.round(r * 100) + "%).");
+        b.setAttribute("aria-label", d.task + ". Click to drill this one.");
+        b.addEventListener("click", function () { setDrill(d); });
+        chips.appendChild(b);
+      });
+      g.appendChild(chips);
+      board.appendChild(g);
+    });
+    var ov = $("overall");
+    ov.querySelector(".num").textContent = allSolid + "/" + deck.length + " solid";
+    ov.querySelector(".fill").style.width = deck.length ? Math.round((allSolid / deck.length) * 100) + "%" : "0%";
+  }
+
+  function renderTiers() {
+    [1, 2, 3].forEach(function (n) {
+      var b = $("tier" + n);
+      b.className = "tier-btn" + (tier === n ? " on" : "");
+      var count = DECK.filter(function (d) { return d.tier <= n; }).length;
+      b.querySelector(".n").textContent = "· " + count;
+    });
+    $("tierWhy").textContent = TIER_WHY[tier];
+  }
+
+  /* ---------------- scoring ---------------- */
+  function scoreRight() {
+    var s = stat(current.id);
+    s.right++; s.streak++; s.last = "right";
+    s.h.push(1); if (s.h.length > 10) s.h = s.h.slice(-10);
+    s.seen = history.length + 1;
+    if (!revealed) {
+      score.right++; score.total++; score.streak++;
+      if (score.streak > score.best) score.best = score.streak;
+      logAttempt(true);
+    }
+    save();
+  }
+  function scoreWrong() {
+    var s = stat(current.id);
+    s.wrong++; s.streak = 0; s.last = "wrong";
+    s.h.push(0); if (s.h.length > 10) s.h = s.h.slice(-10);
+    s.seen = history.length + 1;
+    score.total++; score.streak = 0;
+    logAttempt(false);
+    save();
+  }
+
+  function onCorrect() {
+    locked = true;
+    stopTimer();
+    resetStep();
+    showKeys(stepsOf(current.answer), "ok");
+    scoreRight();
+    applyAct(current.act, current.note);
+    renderMock();
+    renderStats();
+    drawChart();
+    renderBoard();
+    say(revealed ? "Right — but you peeked. It will come back."
+                 : "<b>Right.</b> " + keysLabel(current), "ok");
+    setTimeout(function () { nextDrill(); }, 950);
+  }
+  function onWrong(msg) {
+    resetStep();
+    scoreWrong();
+    renderStats();
+    drawChart();
+    renderBoard();
+    say(msg, "bad");
+  }
+
+  // Which shortcut in the active deck this key press actually is, if any.
+  function nameFor(canon) {
+    var deck = activeDeck(), hits = [];
+    deck.forEach(function (d) {
+      answers(d).forEach(function (a) {
+        if (a === canon && hits.indexOf(d) === -1) hits.push(d);
+      });
+    });
+    return hits.length === 1 ? hits[0] : null;
+  }
+
+  // The one place an answer is judged. Same path for the keyboard and the box.
+  function judge(canon) {
+    if (locked || !current) return;
+    pressed.push(canon);
+    var lists = stepLists(current);
+    var alive = lists.filter(function (l) {
+      if (l.length <= step) return false;
+      for (var i = 0; i <= step; i++) if (l[i] !== pressed[i]) return false;
+      return true;
+    });
+    if (!alive.length) {
+      showKeys(pressed, "bad");
+      var other = nameFor(pressed.join(" ")) || (pressed.length === 1 ? nameFor(pressed[0]) : null);
+      if (other && other.id !== current.id) {
+        onWrong("That is <b>" + other.task.toLowerCase() + "</b>. You wanted " + keysLabel(current) + ".");
+      } else {
+        onWrong("Not that one. You wanted " + keysLabel(current) + ".");
+      }
+      return;
+    }
+    // Did any live answer finish on this press?
+    var done = alive.some(function (l) { return l.length === step + 1; });
+    if (done) { onCorrect(); return; }
+
+    // More keys to come. Hold the sequence open for four seconds.
+    step++;
+    showKeys(pressed, "mid");
+    mockBox.className = "mock-box armed";
+    say("Good start. Now the next key.", "hint");
+    if (stepTimer) clearTimeout(stepTimer);
+    stepTimer = setTimeout(function () {
+      if (locked || !current) return;
+      resetStep();
+      clearKeys();
+      say("Too slow between the two keys. Start again.", "hint");
+    }, 4000);
+  }
+
+  /* ---------------- the keyboard ---------------- */
+  // Keys the page must never swallow, so the browser stays usable.
+  function isBrowserKey(e) {
+    if (e.key === "F5" || e.key === "F12") return true;
+    if (e.metaKey) return true;                                  // leave Cmd to the Mac
+    if (e.ctrlKey && e.shiftKey && /^[ijc]$/i.test(e.key)) return true;  // devtools
+    return false;
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.target === typeIn) return;          // the fallback box owns its own keys
+    if (isBrowserKey(e)) return;
+    if (e.repeat) { e.preventDefault(); return; }
+
+    var c = canonEvent(e);
+    if (c === null) return;                   // a modifier on its own is not an answer
+
+    // Keep Tab usable for moving around the page, unless Tab is the answer or
+    // we are already halfway through a two-key answer.
+    if (c === "tab" && !step) {
+      var tabWanted = stepLists(current || {answer:""}).some(function (l) { return l[0] === "tab"; });
+      if (!tabWanted) return;
+    }
+
+    e.preventDefault();
+    if (locked) return;
+    judge(c);
+  });
+
+  /* ---------------- the type-it box ---------------- */
+  typeIn.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (locked || !current) return;
+    var c = canonTyped(typeIn.value);
+    if (!c) return;
+    typeIn.value = "";
+    resetStep();
+    var lists = stepLists(current);
+    var hit = lists.some(function (l) { return l.join(" ") === c; });
+    // On a stolen shortcut the plain key counts too: "w" for Ctrl+W.
+    if (!hit && eatenNow) {
+      hit = bareLists(current).some(function (l) { return l.join(" ") === c; });
+    }
+    if (hit) { onCorrect(); return; }
+    pressed = c.split(" ");
+    showKeys(pressed, "bad");
+    var other = nameFor(c);
+    if (other && other.id !== current.id) {
+      onWrong("That is <b>" + other.task.toLowerCase() + "</b>. You wanted " + keysLabel(current) + ".");
+    } else {
+      onWrong("Not that one. You wanted " + keysLabel(current) + ".");
+    }
+  });
+
+  /* ---------------- buttons ---------------- */
+  $("revealBtn").addEventListener("click", function () {
+    if (!current) return;
+    revealed = true;
+    stopTimer();
+    resetStep();
+    showKeys(stepsOf(current.answer), "");
+    say("Now press it. Clock stopped.", "hint");
+  });
+  $("timerBtn").addEventListener("click", function () {
+    timerOn = !timerOn;
+    timerLabel();
+    save();
+    if (timerOn) startTimer();
+    else stopTimer();
+  });
+  $("timerSecs").addEventListener("change", function () {
+    var v = parseFloat($("timerSecs").value);
+    if (!(v > 0)) v = 5;
+    if (v > 600) v = 600;
+    timerSecs = v;
+    $("timerSecs").value = String(v);
+    save();
+    if (timerOn) startTimer();
+  });
+  $("skipBtn").addEventListener("click", function () { nextDrill(); });
+  $("resetBtn").addEventListener("click", function () {
+    stats = {};
+    score = { right: 0, total: 0, streak: 0, best: 0 };
+    history = []; recent = [];
+    save();
+    resetMock(); renderMock(); renderStats(); drawChart(); nextDrill();
+  });
+  $("peekBtn").addEventListener("click", function () {
+    peek = !peek;
+    $("peekBtn").className = "act" + (peek ? " on" : "");
+    $("peekBtn").textContent = peek ? "Hide keys again" : "Show all keys";
+    renderBoard();
+  });
+  [1, 2, 3].forEach(function (n) {
+    $("tier" + n).addEventListener("click", function () {
+      tier = n;
+      recent = [];
+      save();
+      renderTiers();
+      nextDrill();
+    });
+  });
+
+  $("themeBtn").addEventListener("click", function () {
+    var cur = document.documentElement.getAttribute("data-theme");
+    var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var now = cur ? cur : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", now === "dark" ? "light" : "dark");
+  });
+
+  /* ---------------- go ---------------- */
+  load();
+  $("timerSecs").value = String(timerSecs);
+  timerLabel();
+  stopTimer();
+  resetMock();
+  renderMock();
+  renderTiers();
+  renderStats();
+  drawChart();
+  nextDrill();
+})();
+</script>
