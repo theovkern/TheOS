@@ -39,6 +39,6 @@ You write the description. The user pastes it into GitLab. Return it in the chat
 
 ## Section rules
 
-- **Changes.** Write this section only when the MR holds more than one change. One change is fully told by Why. One bullet per change a reviewer would judge on its own. Fold renames and formatting into the change they serve.
+- **Changes.** Write this section only when the MR holds more than one change. One change is fully told by Why. One bullet per change a reviewer would judge on its own. Fold renames and formatting into the change they serve. Leave version bumps out.
 - **Results.** Report only what was observed. When nothing ran, write `Not tested.` and name the check a reviewer should run.
 - Keep each section short. A reviewer reads the whole description before the diff.
