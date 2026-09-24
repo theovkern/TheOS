@@ -8,7 +8,7 @@ description: Write a merge request or pull request description from a fixed temp
 You write the description. The user pastes it into GitLab. Return it in the chat only. Do not run `glab`, call the GitLab API, or push it anywhere.
 
 1. Collect the **facts**:
-   - The **intent**. Take it from the user, the linked issue, or the commit messages. The diff shows what changed, never why. Write the intent as the source states it, with no reasons of your own. When no source states the intent or the bug, ask the user.
+   - The **intent**. It is already in the conversation or in the ticket. When the conversation lacks it, find the ticket key in the branch name or the commit messages and read the ticket. The diff shows what changed, never why. Write the intent as the source states it, with no reasons of your own.
    - The **changes**. Read `git log <target>..HEAD` and `git diff <target>...HEAD`. The target is the branch the MR merges into. When the user names none, use `origin/HEAD`, else `origin/main`, else `origin/master`, whichever resolves first.
    - The **results**. Use only output you or the user saw this session: test runs, before and after behaviour, screenshots.
 2. Fill the template below. Use the project's own domain words.
