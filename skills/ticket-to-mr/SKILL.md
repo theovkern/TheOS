@@ -7,6 +7,12 @@ description: Take the current changes to an open merge request — Jira ticket, 
 
 The chain is **ticket → branch → push → MR**. Each link may already exist. You find where the chain stops and create only the links after that point. You never create a second ticket, branch, or MR for the same work.
 
+## 0. Check the Atlassian MCP
+
+Every Jira step goes through the Atlassian MCP. Call `atlassianUserInfo` before anything else. When the tool is missing or the call fails, stop at once. Change nothing, and reply with only this line:
+
+**`FAILED: Atlassian MCP is not connected. Connect it, then run /ticket-to-mr again.`**
+
 ## 1. Find what exists
 
 Check each link in order. Stop checking at the first missing link: every link after it is missing too.
@@ -23,7 +29,7 @@ Tell the user in one line which links exist and which you will create.
 ## 2. Create the missing links
 
 **Ticket.**
-- Project: the key that appears most often in `git branch -a` and `git log`. When no key appears, ask the user for the project key. This is the only question you ask.
+- Project: the key that appears most often in `git branch -a` and `git log`. When no key appears, use the project of the user's most recently updated issue (`searchJiraIssuesUsingJql` with `assignee = currentUser() ORDER BY updated DESC`).
 - Type: `Bug` for a fix, else `Task`. Summary and description come from the intent in the conversation and from the diff.
 - Assign it to the user (`atlassianUserInfo`).
 
