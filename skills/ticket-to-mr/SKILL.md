@@ -7,17 +7,29 @@ description: Take the current changes to an open merge request — Jira ticket, 
 
 The chain is **ticket → branch → bump → push → MR**. Each link may already exist. You find where the chain stops and create only the links after that point. You never create a second ticket, branch, bump, or MR for the same work.
 
-## 0. Check the Atlassian MCP
+## 0. Pick the Jira tool
 
-Every Jira step goes through the Atlassian MCP. Call `atlassianUserInfo` before anything else. When the tool is missing or the call fails, stop at once. Change nothing, and reply with only this line:
+Every Jira step goes through one tool. Pick it before anything else:
 
-**`FAILED: Atlassian MCP is not connected. Connect it, then run /ticket-to-mr again.`**
+1. **`acli`** when `acli jira auth status` succeeds.
+2. Else the **Atlassian MCP** when `atlassianUserInfo` succeeds.
+3. Else stop at once. Change nothing, and reply with only this line:
+
+**`FAILED: neither acli nor the Atlassian MCP is connected. Run acli jira auth login or connect the MCP, then run /ticket-to-mr again.`**
+
+When an `acli` command fails later, run that step with the MCP instead.
+
+| Step | `acli` | Atlassian MCP |
+|---|---|---|
+| Read a ticket | `acli jira workitem view <KEY> --json` | `getJiraIssue` |
+| Latest project | `acli jira workitem search --jql "<jql>" --limit 1 --json` | `searchJiraIssuesUsingJql` |
+| Create a ticket | `acli jira workitem create --project <P> --type <T> --summary "<s>" --description-file <file> --assignee @me --json` | `createJiraIssue`, assignee from `atlassianUserInfo` |
 
 ## 1. Find what exists
 
 Check each link in order. Stop checking at the first missing link: every link after it is missing too.
 
-- **Ticket.** A Jira key (`ABC-123`) in the conversation, the current branch name, or `git log <target>..HEAD`. Read the ticket with the Atlassian MCP to confirm it exists.
+- **Ticket.** A Jira key (`ABC-123`) in the conversation, the current branch name, or `git log <target>..HEAD`. Read the ticket to confirm it exists.
 - **Branch.** The current branch is not the target branch.
 - **Bump.** The version in the version file differs from the one on the target branch. A repository without a version file has no bump link: skip it.
 - **Push.** `git ls-remote --heads origin <branch>` returns a line, and the remote holds every local commit.
@@ -30,9 +42,9 @@ Tell the user in one line which links exist and which you will create.
 ## 2. Create the missing links
 
 **Ticket.**
-- Project: the key that appears most often in `git branch -a` and `git log`. When no key appears, use the project of the user's most recently updated issue (`searchJiraIssuesUsingJql` with `assignee = currentUser() ORDER BY updated DESC`).
+- Project: the key that appears most often in `git branch -a` and `git log`. When no key appears, use the project of the user's most recently updated issue: search with `assignee = currentUser() ORDER BY updated DESC`.
 - Type: `Bug` for a fix, else `Task`. Summary and description come from the intent in the conversation and from the diff.
-- Assign it to the user (`atlassianUserInfo`).
+- Assign it to the user.
 
 **Branch.**
 - Name: follow the pattern of the existing branches in `git branch -a`. When there is no pattern, use `<KEY>-<number>-<short-slug>`.
