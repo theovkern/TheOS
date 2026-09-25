@@ -1,19 +1,23 @@
 ---
 name: mr-description
-description: Write a merge request or pull request description from a fixed template (why, changes, risk and blast radius, results) and return it as GitLab Markdown in the chat. Use when the user asks for an MR or PR description, body, or text.
+description: Write a merge request or pull request description from a fixed template (why, changes, risk and blast radius, results) and write it onto the branch's open MR with `glab`, else return it in the chat. Use when the user asks for an MR or PR description, body, or text.
 ---
 
 # MR description
 
-You write the description. The user pastes it into GitLab. Return it in the chat only. Do not run `glab`, call the GitLab API, or push it anywhere.
+You write the description. `glab` comes first: when the branch has an open MR, you write the description onto it. The chat is the fallback.
 
-1. Collect the **facts**:
-   - The **intent**. It is already in the conversation or in the ticket. When the conversation lacks it, find the ticket key in the branch name or the commit messages and read the ticket. The diff shows what changed, never why. Write the intent as the source states it, with no reasons of your own.
-   - The **changes**. Read `git log <target>..HEAD` and `git diff <target>...HEAD`. The target is the branch the MR merges into. When the user names none, use `origin/HEAD`, else `origin/main`, else `origin/master`, whichever resolves first.
+1. Find the **MR**: `glab mr view <branch> --output json`. When it returns an open MR, it gives the target branch, the MR number, and the **current description**. When `glab` is missing or fails, or no MR is open, go on without one.
+2. Collect the **facts**:
+   - The **intent**. It is already in the conversation or in the ticket. When the conversation lacks it, find the ticket key in the branch name, the MR title, or the commit messages, and read the ticket. The diff shows what changed, never why. Write the intent as the source states it, with no reasons of your own.
+   - The **changes**. Read `git log <target>..HEAD` and `git diff <target>...HEAD`. The target is the branch the MR merges into: the user's, else the open MR's, else `origin/HEAD`, else `origin/main`, else `origin/master`, whichever resolves first.
    - The **results**. Use only output you or the user saw this session: test runs, before and after behaviour, screenshots.
-2. Fill the template below. Use the project's own domain words.
-3. Run the `pstack:unslop` skill on the filled text. Keep the headings and the facts.
-4. Reply with the description in one fenced block opened with four backticks and `markdown`, so code blocks inside it survive the copy. Put nothing else in the block.
+3. Write the text. Use the project's own domain words.
+   - With a current description, **amend** it. Compare it line by line with the facts. Keep every line that is still true, word for word: the user's wording, extra sections, screenshots, links. Edit the lines the facts contradict. Add the facts it is missing, in the template's section for them. Done when every fact is in the text and every line left is true.
+   - Fill the template below when the description is empty, or when it describes none of the current diff (the history was rewritten).
+4. Run the `pstack:unslop` skill on the lines you wrote. Keep the headings and the facts.
+5. With an open MR, write the description to a file in the scratchpad and run `glab mr update <number> --description-file <file>`. Reply with the MR link and one line per section you changed.
+6. Without an open MR, or when `glab mr update` fails, reply with the description in one fenced block opened with four backticks and `markdown`, so code blocks inside it survive the copy. Put nothing else in the block. Add the `glab` error in one line when there was one.
 
 ## Template
 
