@@ -17,9 +17,9 @@ You write the description. `glab` comes first: when the branch has an open MR, y
      1. The repository: `.gitlab/merge_request_templates/*.md` on the target branch. Use `Default.md`, else the only file there.
      2. The project settings, as the default description. Run this in the repository:
         ```sh
-        glab api projects/:id | python -c "import sys,json; print(json.load(sys.stdin).get('merge_requests_template') or '')"
+        glab api projects/:id | PYTHONUTF8=1 python -c "import sys,json; print(json.load(sys.stdin).get('merge_requests_template') or '')"
         ```
-        `glab api` has no `--jq` flag, so parse the JSON yourself. Empty output means no template. pyrtmf keeps its checklist here.
+        `glab api` has no `--jq` flag, so parse the JSON yourself. `glab` writes UTF-8. `PYTHONUTF8=1` makes Python read and print UTF-8 too. Without it, Python on Windows uses the system code page and fails on symbols such as `✓` or `—`. Empty output means no template. pyrtmf keeps its checklist here.
 
      When neither has one, there is no project template.
 3. Write the text. Use the project's own domain words.
