@@ -21,4 +21,10 @@ Runs [pstack](https://github.com/cursor/plugins/tree/main/pstack) role seats on 
    interrogate reviewers: opus xhigh, sonnet xhigh, codex:gpt-6-astra xhigh
    ```
 
+## Code-writing seats
+
+A `codex:` entry also works in a delegate role, such as `bug-fix: codex:gpt-6-astra xhigh`. The seat runs in the Codex `workspace-write` sandbox with network access. That sandbox keeps `.git` read-only, and on Windows it can block a test runner that starts child processes. So a Codex delegate leaves its changes uncommitted, and the chat commits them and reruns the tests. Codex also has no browser, Atlassian or Claude-only tools, so the chat runs those checks.
+
+The relay runs Codex in the background and polls it, so a seat can take longer than the 10-minute limit of one shell call.
+
 `/pstack:setup-pstack` rewrites `~/.claude/rules/pstack-models.md` and drops models it does not detect. Do step 3 again after each run.
