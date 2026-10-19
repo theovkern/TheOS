@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Status line: Model | Effort | Tokens | 5h [bar] | 7d | Resets | Codex 5h [bar] | Codex 7d | Codex Resets
+# Codex values come live from codex-limits.mjs (cached 60s), else from Codex session logs.
 # Uses Python for JSON parsing (jq is not installed on this machine).
 #
 # Color scheme (tuned for a terminal that renders dimmed colors):
@@ -20,8 +21,12 @@ if [ -z "$python_bin" ]; then
   exit 0
 fi
 
-printf '%s' "$input" | "$python_bin" -c '
-import sys, json, datetime
+# pwd -W gives the C:/ form that a native Windows Python can open.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && { pwd -W 2>/dev/null || pwd; })"
+
+printf '%s' "$input" | SCRIPT_DIR="$script_dir" "$python_bin" -c '
+import sys, json, datetime, os
+SCRIPT_DIR = os.environ["SCRIPT_DIR"]
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -105,11 +110,70 @@ if week is not None:
     except (TypeError, ValueError):
         pass
 
-# Codex 5h / weekly limits (percent used), read from the newest Codex session
-# log. Only the newest dated folders are listed and only the file tail is read.
-# Shows nothing if no log or no rate_limits entry is found.
+# Codex 5h / weekly limits (percent used). codex-limits.mjs saves the live values
+# to a cache. A cache older than 60s is refreshed in the background, so the next
+# redraw shows the new values. Without a cache, the newest Codex session log is read.
+def codex_windows(obj):
+    import time
+    out = []
+    resets = []
+    for key in ("primary", "secondary"):
+        w = obj.get(key) if isinstance(obj, dict) else None
+        if not isinstance(w, dict) or w.get("used_percent") is None:
+            out.append(None)
+            resets.append(None)
+            continue
+        try:
+            pct = float(w["used_percent"])
+            ra = w.get("resets_at")
+            if ra is not None and float(ra) < time.time():
+                pct = 0.0
+                ra = None  # window already reset; no time to show
+            out.append(int(round(pct)))
+            resets.append(ra)
+        except (TypeError, ValueError):
+            out.append(None)
+            resets.append(None)
+    if any(v is not None for v in out):
+        return out, resets
+    return None
+
+def refresh_codex_cache(cache):
+    import subprocess, time
+    lock = cache + ".refreshing"
+    try:
+        if time.time() - os.path.getmtime(lock) < 30:
+            return
+    except OSError:
+        pass
+    try:
+        os.makedirs(os.path.dirname(cache), exist_ok=True)
+        open(lock, "w").close()
+        # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP, so the refresh outlives this redraw.
+        flags = 0x00000208 if os.name == "nt" else 0
+        subprocess.Popen(["node", os.path.join(SCRIPT_DIR, "codex-limits.mjs")],
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         creationflags=flags, start_new_session=os.name != "nt")
+    except OSError:
+        pass
+
 def codex_limits():
-    import os, re, time
+    import re, time
+    cache = os.path.join(os.path.expanduser("~"), ".cache", "theos", "codex-limits.json")
+    try:
+        age = time.time() - os.path.getmtime(cache)
+    except OSError:
+        age = None
+    if age is None or age > 60:
+        refresh_codex_cache(cache)
+    if age is not None:
+        try:
+            with open(cache, encoding="utf-8") as fh:
+                result = codex_windows(json.load(fh))
+            if result:
+                return result
+        except (OSError, ValueError):
+            pass
     base = os.path.join(os.path.expanduser("~"), ".codex", "sessions")
     def subdirs(p):
         try:
@@ -144,27 +208,9 @@ def codex_limits():
                 obj, _ = json.JSONDecoder().raw_decode(text, mt.end() - 1)
             except ValueError:
                 continue
-            out = []
-            resets = []
-            for key in ("primary", "secondary"):
-                w = obj.get(key) if isinstance(obj, dict) else None
-                if not isinstance(w, dict) or w.get("used_percent") is None:
-                    out.append(None)
-                    resets.append(None)
-                    continue
-                try:
-                    pct = float(w["used_percent"])
-                    ra = w.get("resets_at")
-                    if ra is not None and float(ra) < time.time():
-                        pct = 0.0
-                        ra = None  # window already reset; no time to show
-                    out.append(int(round(pct)))
-                    resets.append(ra)
-                except (TypeError, ValueError):
-                    out.append(None)
-                    resets.append(None)
-            if any(v is not None for v in out):
-                return out, resets
+            result = codex_windows(obj)
+            if result:
+                return result
     return None
 
 # Show both the 5h and the 7d (weekly) reset times, side by side, converted

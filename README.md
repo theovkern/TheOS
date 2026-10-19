@@ -98,10 +98,12 @@ The command guard is forked from
 ## Status line
 
 [`statusline/statusline-command.sh`](./statusline/statusline-command.sh) is my Claude Code
-status line: model, effort, tokens, the Claude 5h and 7d limits, and the Codex 5h and 7d
-limits read from the newest Codex session log. Point Claude Code at it in
+status line: model, effort, tokens, and the Claude and Codex 5h and 7d limits with their
+reset times. [`statusline/codex-limits.mjs`](./statusline/codex-limits.mjs) reads the Codex
+limits live from `codex app-server`, which spends no model tokens, and caches them for 60
+seconds. `refreshInterval` redraws the line while the chat is idle. Point Claude Code at it in
 `~/.claude/settings.json`:
 
 ```json
-"statusLine": { "type": "command", "command": "bash ~/Documents/test/TheOS/statusline/statusline-command.sh" }
+"statusLine": { "type": "command", "command": "bash ~/Documents/test/TheOS/statusline/statusline-command.sh", "refreshInterval": 30 }
 ```
