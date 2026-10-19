@@ -11,7 +11,7 @@ You write the description. `glab` comes first: when the branch has an open MR, y
 2. Collect the **facts**:
    - The **intent**. It is already in the conversation or in the ticket. When the conversation lacks it, find the ticket key in the branch name, the MR title, or the commit messages, and read the ticket. The diff shows what changed, never why. Write the intent as the source states it, with no reasons of your own.
    - The **changes**. Read `git log <target>..HEAD` and `git diff <target>...HEAD`. The target is the branch the MR merges into: the user's, else the open MR's, else `origin/HEAD`, else `origin/main`, else `origin/master`, whichever resolves first.
-   - The **results**. Use only output you or the user saw this session: test runs, before and after behaviour, screenshots.
+   - The **results**. Use only output you or the user saw this session that proves this change: tests that cover it, before and after behaviour, screenshots.
    - The **ticket key**, for example `PROJ-123`. Find it in the conversation, the branch name, the MR title, or the commit messages.
    - The **project template**. GitLab keeps it in one of two places. Look in this order:
      1. The repository: `.gitlab/merge_request_templates/*.md` on the target branch. Use `Default.md`, else the only file there.
@@ -48,7 +48,7 @@ You write the description. `glab` comes first: when the branch has an open MR, y
 
 ## Results
 
-<What proves it works: the tests that ran and their outcome, before and after behaviour, screenshots to attach.>
+<What proves this change works: the tests that cover it and their outcome, before and after behaviour, screenshots to attach.>
 
 <The project template, when there is one.>
 
@@ -65,5 +65,5 @@ The description always ends in this order:
 ## Section rules
 
 - **Changes.** Write this section only when the MR holds more than one change. One change is fully told by Why. One bullet per change a reviewer would judge on its own. Fold renames and formatting into the change they serve. Leave version bumps out.
-- **Results.** Report only what was observed. When nothing ran, write `Not tested.` and name the check a reviewer should run.
+- **Results.** Report only what was observed and proves this change. A test that broke, or that this change fixed, is a result. A green suite or pipeline run is a checklist tick: tick the template's box for it. When nothing ran, write `Not tested.` and name the check a reviewer should run.
 - Keep each section short. A reviewer reads the whole description before the diff.
