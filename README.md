@@ -94,3 +94,14 @@ It stops accidents. It does not stop a determined attacker. Read
 
 The command guard is forked from
 [davidondrej/pi-config](https://github.com/davidondrej/pi-config).
+
+## Status line
+
+[`statusline/statusline-command.sh`](./statusline/statusline-command.sh) is my Claude Code
+status line: model, effort, tokens, the Claude 5h and 7d limits, and the Codex 5h and 7d
+limits read from the newest Codex session log. Point Claude Code at it in
+`~/.claude/settings.json`:
+
+```json
+"statusLine": { "type": "command", "command": "bash ~/Documents/test/TheOS/statusline/statusline-command.sh" }
+```
