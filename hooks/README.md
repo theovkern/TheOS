@@ -32,11 +32,11 @@ One executable serves three harnesses. The flag picks the reply format.
 |---|---|---|---|
 | Claude Code | `~/.claude/settings.json` → `hooks.PreToolUse`, matcher `Bash` | `--claude` | exit 2, reason on stderr |
 | Cursor | `~/.cursor/hooks.json` → `beforeShellExecution` | `--cursor` | `{"permission":"deny"}` on stdout |
-| Codex | `~/.codex/hooks.json` → `beforeShellExecution` | `--codex` | exit 2, reason on stderr |
+| Codex | `~/.codex/hooks.json` → `PreToolUse`, matcher `Bash` | `--codex` | exit 2, reason on stderr |
 
 Re-register on a new machine with `npm run install-hooks`.
 
-Codex is not installed on this machine yet, so its registration is written but unverified.
+Codex runs a hook only after you trust it. After each install, start `codex`, run `/hooks`, and trust the guard. Until then, Codex runs every command unguarded.
 
 ## Editing the denylist
 

@@ -41,11 +41,16 @@ cursor.hooks.beforeShellExecution = [{ command: command("cursor") }];
 writeJson(cursorPath, cursor);
 console.log(`Cursor       ${cursorPath}`);
 
-// --- Codex: beforeShellExecution, blocks on exit 2 ---------------------------
+// --- Codex: PreToolUse, blocks on exit 2 -------------------------------------
 const codexPath = join(home, ".codex", "hooks.json");
 const codex = readJson(codexPath, {});
 codex.hooks ??= {};
-codex.hooks.beforeShellExecution = [{ command: command("codex") }];
+delete codex.hooks.beforeShellExecution;
+codex.hooks.PreToolUse = (codex.hooks.PreToolUse ?? []).filter((e) => !mentionsGuard(e));
+codex.hooks.PreToolUse.push({
+  matcher: "Bash",
+  hooks: [{ type: "command", command: command("codex"), timeout: 10 }],
+});
 writeJson(codexPath, codex);
 console.log(`Codex        ${codexPath}`);
 
