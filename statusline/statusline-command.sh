@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Status line: Model | Effort | Tokens | 5h [bar] | 7d | Resets | Codex 5h [bar] | Codex 7d
+# Status line: Model | Effort | Tokens | 5h [bar] | 7d | Resets | Codex 5h [bar] | Codex 7d | Codex Resets
 # Uses Python for JSON parsing (jq is not installed on this machine).
 #
 # Color scheme (tuned for a terminal that renders dimmed colors):
@@ -145,21 +145,26 @@ def codex_limits():
             except ValueError:
                 continue
             out = []
+            resets = []
             for key in ("primary", "secondary"):
                 w = obj.get(key) if isinstance(obj, dict) else None
                 if not isinstance(w, dict) or w.get("used_percent") is None:
                     out.append(None)
+                    resets.append(None)
                     continue
                 try:
                     pct = float(w["used_percent"])
                     ra = w.get("resets_at")
                     if ra is not None and float(ra) < time.time():
                         pct = 0.0
+                        ra = None  # window already reset; no time to show
                     out.append(int(round(pct)))
+                    resets.append(ra)
                 except (TypeError, ValueError):
                     out.append(None)
+                    resets.append(None)
             if any(v is not None for v in out):
-                return out
+                return out, resets
     return None
 
 # Show both the 5h and the 7d (weekly) reset times, side by side, converted
@@ -188,12 +193,21 @@ try:
 except Exception:
     cx = None
 if cx:
-    if cx[0] is not None:
-        v = cx[0]
+    cx_pct, cx_resets = cx
+    if cx_pct[0] is not None:
+        v = cx_pct[0]
         parts.append(wrap(tier_color(v), "Codex 5h: [%s] %d%%" % (bar(v), v)))
-    if cx[1] is not None:
-        v = cx[1]
+    if cx_pct[1] is not None:
+        v = cx_pct[1]
         parts.append(wrap(tier_color(v), "Codex 7d: %d%%" % v))
+    # Codex reset times, styled like the Claude "Resets:" segment above.
+    cx_bits = []
+    for label, ts in zip(("5h", "7d"), cx_resets):
+        t = fmt_reset(ts) if ts is not None else None
+        if t is not None:
+            cx_bits.append(wrap(BOLD_CYAN, label) + " " + wrap(DIM_CYAN, t))
+    if cx_bits:
+        parts.append(wrap(BOLD_CYAN, "Codex Resets:") + " " + " | ".join(cx_bits))
 
 sys.stdout.write(" | ".join(parts))
 '
