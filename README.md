@@ -58,7 +58,7 @@ wrapper around it would, so this is a list of links and commands rather than mac
 | Skills | Claude Code | Cursor | Any agent |
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | `/plugin install mattpocock-skills` | — | `npx skills@latest add mattpocock/skills` |
-| [pstack](https://github.com/cursor/plugins/tree/main/pstack) | — | `/add-plugin pstack` | — |
+| [pstack](https://github.com/cursor/plugins/tree/main/pstack) | `claude plugin marketplace add cursor/plugins`, then `claude plugin install pstack@cursor-plugins` | `/add-plugin pstack` | — |
 | [cursor-team-kit](https://github.com/cursor/plugins/tree/main/cursor-team-kit) | — | `/add-plugin cursor-team-kit` | — |
 | [davidondrej/skills](https://github.com/davidondrej/skills) | — | — | see the repo |
 
@@ -67,6 +67,13 @@ them on. It is the closest thing to a harness-independent installer.
 
 After installing Matt's set, run `/setup-matt-pocock-skills` once per repo.
 After installing pstack, run `/setup-pstack`.
+
+pstack has no official Codex build. To run pstack panel seats (reviewers, runners, judges)
+on Codex models from Claude Code, install my
+[pstack-codex](./plugins/pstack-codex/README.md) plugin and follow its README.
+Each Codex seat reads poteto-mode and the principles from the official Claude Code plugin,
+so both model families work from the same pstack version. `/setup-pstack` drops the
+`codex:` lines from `~/.claude/rules/pstack-models.md`, so add them again after each run.
 
 Two things to know before installing:
 

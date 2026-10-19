@@ -1,0 +1,13 @@
+{
+  "name": "theos",
+  "owner": {
+    "name": "Theo Valentin Kern"
+  },
+  "plugins": [
+    {
+      "name": "pstack-codex",
+      "source": "./plugins/pstack-codex",
+      "description": "Runs pstack role seats written as codex:<model> on the local Codex CLI through a relay agent."
+    }
+  ]
+}

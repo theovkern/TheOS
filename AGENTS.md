@@ -40,6 +40,13 @@ and mine to collide.
 2. `npm run link`.
 3. Commit. It is now backed up, and live in every harness.
 
+## Plugins
+
+`plugins/` holds Claude Code plugins I wrote, for things a skill cannot carry, such as an
+agent. `.claude-plugin/marketplace.json` lists them, so `claude plugin marketplace add
+theovkern/TheOS` installs from this repository. Bump a plugin's `version` in its
+`plugin.json` with every change, or installed copies never update.
+
 ## Command guard
 
 `hooks/deny-dangerous.mjs` blocks catastrophic shell commands in every repository on this
