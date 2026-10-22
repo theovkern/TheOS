@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Installs Claude Code, puts it on PATH, adds the `cc` shortcut, registers my
+// Configures Claude Code (installed by install-tools): puts it on PATH, adds the `cc` shortcut, registers my
 // status line, links my rules, and installs the foreign plugins listed in the README with
 // Claude Code's own installer.
 // Safe to run twice: every step checks before it changes anything.
@@ -43,17 +43,14 @@ const writeBlock = (path, lines) => {
   console.log(`${next === old ? "unchanged" : "updated  "}  ${path}`);
 };
 
-// --- Claude Code: official native installer, into ~/.local/bin ---------------
+// --- Claude Code: installed by install-tools, into ~/.local/bin ----------------
 process.env.PATH = `${bin}${delimiter}${process.env.PATH}`;
 const version = tryRun("claude", ["--version"]);
-if (version) {
-  console.log(`Claude Code  ${version}, already installed`);
-} else {
-  console.log("Claude Code  installing...");
-  if (windows) powershell("irm https://claude.ai/install.ps1 | iex");
-  else run("bash", ["-c", "curl -fsSL https://claude.ai/install.sh | bash"]);
-  console.log(`Claude Code  ${run("claude", ["--version"])}`);
+if (!version) {
+  console.error("Claude Code is not installed. Run npm run install-tools first.");
+  process.exit(1);
 }
+console.log(`Claude Code  ${version}`);
 
 // --- PATH and the `cc` shortcut -----------------------------------------------
 // An alias, never a `cc` executable: on macOS and Linux `cc` is the C compiler,

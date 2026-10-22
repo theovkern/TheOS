@@ -4,7 +4,10 @@
 
 - Node 20 or newer (`node -v`)
 - git
-- `gh`, signed in, if you want the project repositories too (`npm run install-cli` installs it)
+- Homebrew, on macOS and Linux
+
+On Windows, both come from winget: `winget install Git.Git OpenJS.NodeJS.LTS`, then open a
+new terminal.
 
 Nothing else. No `jq`, no Developer Mode, no elevated shell.
 
@@ -20,11 +23,11 @@ npm run setup
 
 | Step | What it does |
 |---|---|
-| `npm run install-claude` | Installs Claude Code onto PATH, adds the `cc` alias, registers the status line, links `~/.claude/rules` to `rules/`, installs Matt's set, pstack and pstack-codex |
+| `npm run install-tools` | Installs `gh`, `glab`, Atlassian's `acli` (for Jira), Claude Code and Codex. winget on Windows, Homebrew elsewhere; Claude Code by its native installer and Codex by npm, because those auto-update and the packaged builds do not. Sign in afterwards: `gh auth login`, `glab auth login`, `acli jira auth login --web`, `claude`, `codex login` |
+| `npm run install-claude` | Puts Claude Code on PATH, adds the `cc` alias, registers the status line, links `~/.claude/rules` to `rules/`, installs Matt's set, pstack and pstack-codex |
 | `npm run link` | Symlinks my skills into every harness |
 | `npm run install-hooks` | Registers the command guard in Claude Code, Cursor, Codex |
 | `npm run install-shell` | Windows only: installs posh-git and imports it in the PowerShell profile, for git tab completion |
-| `npm run install-cli` | Installs `gh`, `glab` and Atlassian's `acli` (for Jira): winget or Homebrew, `acli` as a bare exe in `~/.local/bin` on Windows. Sign in afterwards: `gh auth login`, `glab auth login`, `acli jira auth login --web` |
 
 ## 2. Check it worked
 

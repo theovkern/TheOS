@@ -9,8 +9,8 @@
     "install-hooks": "node scripts/install-hooks.mjs",
     "install-claude": "node scripts/install-claude.mjs",
     "install-shell": "node scripts/install-shell.mjs",
-    "install-cli": "node scripts/install-cli.mjs",
-    "setup": "npm run install-claude && npm run link && npm run install-hooks && npm run install-shell && npm run install-cli",
+    "install-tools": "node scripts/install-tools.mjs",
+    "setup": "npm run install-tools && npm run install-claude && npm run link && npm run install-hooks && npm run install-shell",
     "test": "node --test scripts/*.test.mjs hooks/*.test.mjs"
   }
 }
