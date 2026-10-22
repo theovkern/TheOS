@@ -7,7 +7,8 @@
   "scripts": {
     "link": "node scripts/link-skills.mjs",
     "install-hooks": "node scripts/install-hooks.mjs",
-    "setup": "npm run link && npm run install-hooks",
+    "install-claude": "node scripts/install-claude.mjs",
+    "setup": "npm run install-claude && npm run link && npm run install-hooks",
     "test": "node --test scripts/*.test.mjs hooks/*.test.mjs"
   }
 }

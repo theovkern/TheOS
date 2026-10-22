@@ -16,10 +16,11 @@ cd ~/Documents/TheOS
 npm run setup
 ```
 
-`npm run setup` runs two steps. Run them one at a time if something fails:
+`npm run setup` runs three steps. Run them one at a time if something fails:
 
 | Step | What it does |
 |---|---|
+| `npm run install-claude` | Installs Claude Code onto PATH, adds the `cc` alias, registers the status line, links `~/.claude/rules` to `rules/`, installs Matt's set, pstack and pstack-codex |
 | `npm run link` | Symlinks my skills into every harness |
 | `npm run install-hooks` | Registers the command guard in Claude Code, Cursor, Codex |
 
@@ -43,9 +44,10 @@ If it exits 0, you are not protected. Do not continue until it exits 2.
 
 ## 3. Skills by other people
 
-Not managed here. Install them with their author's installer — the table in the
-[README](../README.md) has the links and commands. Then run each set's setup skill
-(`/setup-matt-pocock-skills`, `/setup-pstack`).
+`npm run install-claude` already installed Matt's set and pstack as Claude Code plugins.
+For other harnesses, use the author's installer from the table in the
+[README](../README.md). Then run each set's setup skill
+(`/setup-matt-pocock-skills`, `/pstack:setup-pstack`).
 
 ## 4. Projects
 
