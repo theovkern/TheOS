@@ -4,7 +4,7 @@
 
 - Node 20 or newer (`node -v`)
 - git
-- `gh`, signed in, if you want the project repositories too
+- `gh`, signed in, if you want the project repositories too (`npm run install-cli` installs it)
 
 Nothing else. No `jq`, no Developer Mode, no elevated shell.
 
@@ -16,7 +16,7 @@ cd ~/Documents/TheOS
 npm run setup
 ```
 
-`npm run setup` runs four steps. Run them one at a time if something fails:
+`npm run setup` runs five steps. Run them one at a time if something fails:
 
 | Step | What it does |
 |---|---|
@@ -24,6 +24,7 @@ npm run setup
 | `npm run link` | Symlinks my skills into every harness |
 | `npm run install-hooks` | Registers the command guard in Claude Code, Cursor, Codex |
 | `npm run install-shell` | Windows only: installs posh-git and imports it in the PowerShell profile, for git tab completion |
+| `npm run install-cli` | Installs `gh`, `glab` and Atlassian's `acli` (for Jira): winget or Homebrew, `acli` as a bare exe in `~/.local/bin` on Windows. Sign in afterwards: `gh auth login`, `glab auth login`, `acli jira auth login --web` |
 
 ## 2. Check it worked
 
