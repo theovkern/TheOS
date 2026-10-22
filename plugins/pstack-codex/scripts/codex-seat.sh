@@ -14,10 +14,9 @@ You are one seat in a pstack workflow, and you work by its principles. Before an
 EOF
 }
 
-# The sandbox keeps .git read-only, and on Windows it can block child processes.
 writer_note() {
   cat <<'EOF2'
-You may edit files in the working directory. The sandbox keeps .git read-only, so leave your changes uncommitted: the chat commits them. If a command fails with EPERM or a sandbox denial, do not work around it. Report the command and the error, so the chat can run it.
+You may edit files in the working directory and install its dependencies. The sandbox keeps .git read-only, so leave your changes uncommitted: the chat commits them. If a command fails with EPERM or a sandbox denial, do not work around it. Report the command and the error, so the chat can run it.
 EOF2
 }
 
@@ -37,10 +36,11 @@ run)
   fi
   pstack=$(winpath "${pstack%/}")
 
-  # The elevated Windows sandbox runs commands as an account that cannot open the user's
-  # folders, so every read fails with CreateProcessWithLogonW 267.
-  args=(exec -m "$model" -c 'windows.sandbox="unelevated"' -C "$dir" --skip-git-repo-check
-    --ephemeral --color never -o "$run/out.txt")
+  # The unelevated Windows sandbox blocks child processes, so npm install fails with EPERM -4048.
+  # The elevated one runs as a separate account whose default policy refuses npm.ps1.
+  args=(exec -m "$model" -c 'windows.sandbox="elevated"'
+    -c 'shell_environment_policy.set.PSExecutionPolicyPreference="RemoteSigned"'
+    -C "$dir" --skip-git-repo-check --ephemeral --color never -o "$run/out.txt")
   case $effort in
     session) ;;
     max) args+=(-c model_reasoning_effort=xhigh) ;;
@@ -50,6 +50,10 @@ run)
     args+=(-s read-only)
   else
     args+=(-s workspace-write -c sandbox_workspace_write.network_access=true)
+    # npm keeps its cache outside the workspace.
+    if command -v npm >/dev/null; then
+      args+=(-c "sandbox_workspace_write.writable_roots=[\"$(winpath "$(npm config get cache)")\"]")
+    fi
   fi
 
   { preamble "$pstack"; [ "$readonly" = true ] || writer_note; echo; cat "$run/brief.txt"; } | codex "${args[@]}" - > "$run/log.txt" 2>&1

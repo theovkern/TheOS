@@ -1,6 +1,6 @@
 {
   "name": "pstack-codex",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Runs pstack role seats written as codex:<model> on the local Codex CLI through a relay agent.",
   "author": {
     "name": "Theo Valentin Kern"

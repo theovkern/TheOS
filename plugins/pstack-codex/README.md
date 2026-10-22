@@ -23,7 +23,7 @@ Runs [pstack](https://github.com/cursor/plugins/tree/main/pstack) role seats on 
 
 ## Code-writing seats
 
-A `codex:` entry also works in a delegate role, such as `bug-fix: codex:gpt-6-astra xhigh`. The seat runs in the Codex `workspace-write` sandbox with network access. That sandbox keeps `.git` read-only, and on Windows it can block a test runner that starts child processes. So a Codex delegate leaves its changes uncommitted, and the chat commits them and reruns the tests. Codex also has no browser, Atlassian or Claude-only tools, so the chat runs those checks.
+A `codex:` entry also works in a delegate role, such as `bug-fix: codex:gpt-6-astra xhigh`. The seat runs in the Codex `workspace-write` sandbox with network access. The seat can also write to the npm cache, so it can install dependencies and run the build. On Windows it uses the elevated sandbox, because the unelevated one blocks child processes and so blocks `npm install`. The sandbox keeps `.git` read-only, so a Codex delegate leaves its changes uncommitted, and the chat commits them and reruns the tests. Codex also has no browser, Atlassian or Claude-only tools, so the chat runs those checks.
 
 The relay runs Codex in the background and polls it, so a seat can take longer than the 10-minute limit of one shell call.
 
