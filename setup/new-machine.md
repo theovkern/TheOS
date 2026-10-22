@@ -16,13 +16,14 @@ cd ~/Documents/TheOS
 npm run setup
 ```
 
-`npm run setup` runs three steps. Run them one at a time if something fails:
+`npm run setup` runs four steps. Run them one at a time if something fails:
 
 | Step | What it does |
 |---|---|
 | `npm run install-claude` | Installs Claude Code onto PATH, adds the `cc` alias, registers the status line, links `~/.claude/rules` to `rules/`, installs Matt's set, pstack and pstack-codex |
 | `npm run link` | Symlinks my skills into every harness |
 | `npm run install-hooks` | Registers the command guard in Claude Code, Cursor, Codex |
+| `npm run install-shell` | Windows only: installs posh-git and imports it in the PowerShell profile, for git tab completion |
 
 ## 2. Check it worked
 

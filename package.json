@@ -8,7 +8,8 @@
     "link": "node scripts/link-skills.mjs",
     "install-hooks": "node scripts/install-hooks.mjs",
     "install-claude": "node scripts/install-claude.mjs",
-    "setup": "npm run install-claude && npm run link && npm run install-hooks",
+    "install-shell": "node scripts/install-shell.mjs",
+    "setup": "npm run install-claude && npm run link && npm run install-hooks && npm run install-shell",
     "test": "node --test scripts/*.test.mjs hooks/*.test.mjs"
   }
 }
