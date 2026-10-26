@@ -1,0 +1,9 @@
+{
+  "rm-home": { "command": "rm -rf ~", "expect": "block" },
+  "force-push": { "command": "git push --force origin main", "expect": "block" },
+  "gh-token": { "command": "gh auth token", "expect": "block" },
+  "windows-rmdir": { "command": "rmdir /s /q C:\\Users", "expect": "block" },
+  "rm-node-modules": { "command": "rm -rf node_modules", "expect": "allow" },
+  "force-with-lease": { "command": "git push --force-with-lease origin main", "expect": "allow" },
+  "ls": { "command": "ls -la", "expect": "allow" }
+}
