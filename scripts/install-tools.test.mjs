@@ -14,3 +14,9 @@ for (const os of ["win32", "darwin", "linux"]) {
     assert.deepEqual(Object.keys(installers(os)).sort(), ["acli", "claude", "codex", "gh", "glab"]);
   });
 }
+
+test("linux: no tool needs Homebrew or sudo", () => {
+  for (const [name, commands] of Object.entries(installers("linux"))) {
+    for (const command of commands) assert.ok(!/\b(brew|sudo)\b/.test(command.join(" ")), `${name} runs ${command.join(" ")}`);
+  }
+});
