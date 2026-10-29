@@ -11,19 +11,19 @@ The chain is **ticket → branch → bump → push → MR**. Each link may alrea
 
 Every Jira step goes through one tool. Pick it before anything else:
 
-1. **`acli`** when `acli jira auth status` succeeds.
-2. Else the **Atlassian MCP** when `atlassianUserInfo` succeeds.
+1. The **Atlassian MCP** when `atlassianUserInfo` succeeds.
+2. Else **`acli`** when `acli jira auth status` succeeds.
 3. Else stop at once. Change nothing, and reply with only this line:
 
-**`FAILED: neither acli nor the Atlassian MCP is connected. Run acli jira auth login or connect the MCP, then run /ticket-to-mr again.`**
+**`FAILED: neither the Atlassian MCP nor acli is connected. Connect the MCP or run acli jira auth login, then run /ticket-to-mr again.`**
 
-When an `acli` command fails later, run that step with the MCP instead.
+When an MCP call fails later, run that step with `acli` instead.
 
-| Step | `acli` | Atlassian MCP |
+| Step | Atlassian MCP | `acli` |
 |---|---|---|
-| Read a ticket | `acli jira workitem view <KEY> --json` | `getJiraIssue` |
-| Latest project | `acli jira workitem search --jql "<jql>" --limit 1 --json` | `searchJiraIssuesUsingJql` |
-| Create a ticket | `acli jira workitem create --project <P> --type <T> --summary "<s>" --description-file <file> --assignee @me --json` | `createJiraIssue`, assignee from `atlassianUserInfo` |
+| Read a ticket | `getJiraIssue` | `acli jira workitem view <KEY> --json` |
+| Latest project | `searchJiraIssuesUsingJql` | `acli jira workitem search --jql "<jql>" --limit 1 --json` |
+| Create a ticket | `createJiraIssue`, assignee from `atlassianUserInfo` | `acli jira workitem create --project <P> --type <T> --summary "<s>" --description-file <file> --assignee @me --json` |
 
 ## 1. Find what exists
 
