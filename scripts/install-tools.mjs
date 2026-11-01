@@ -1,70 +1,93 @@
 #!/usr/bin/env node
-// Installs my command-line tools: gh (GitHub), glab (GitLab), acli (Atlassian, for Jira),
-// Claude Code and Codex. winget on Windows, Homebrew on macOS, release binaries on Linux.
-// Claude Code and Codex never come from a package manager: those builds do not auto-update,
-// the native installer and npm ones do.
+// Installs the command-line tools that tools.json lists for one profile:
+//   host    a machine I work on: gh, glab, acli (Atlassian, for Jira), Claude Code and Codex
+//   server  the machine that runs the agent boxes: sbx and Tailscale
+//   box     an agent box: gh (everything else is in the sbx image)
+// winget on Windows, Homebrew on macOS, release binaries on Linux. Claude Code and Codex never come from
+// a package manager: those builds do not auto-update, the native installer and npm ones do.
 // Safe to run twice: a tool already on PATH is left alone.
+//
+// Usage: install-tools.mjs [--profile host|server|box] [--print]
+//   --print  writes the commands for the tools that are missing, as a shell script, and runs nothing.
+//
+// tools.json maps each tool to its profiles and, per platform, the commands that install it. A command
+// may use these placeholders, expanded here and nowhere else:
+//   {bin}   ~/.local/bin, where Linux release binaries and Claude Code go
+//   {home}  the home directory
+//   {cpu}   amd64 or arm64, the spelling release URLs use
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { arch, homedir, platform } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+export const PROFILES = ["host", "server", "box"];
+export const PLATFORMS = ["linux", "darwin", "win32"];
+export const PLACEHOLDERS = ["bin", "cpu", "home"];
+
+const here = dirname(fileURLToPath(import.meta.url));
 const bin = join(homedir(), ".local", "bin");
 
 // A package installed but not yet on this terminal's PATH makes winget exit with one of these.
 const WINGET_ALREADY_INSTALLED = [0x8a15002b, 0x8a150061]; // no applicable upgrade, package already installed
-// Linux takes each tool's release binary into ~/.local/bin, so it needs neither Homebrew nor sudo.
-// These do not self-update: delete one from ~/.local/bin and run this again to upgrade it.
-const cpu = { x64: "amd64", arm64: "arm64" }[arch()];
-const tarball = (name, latestTag, url, member) => [
-  "bash", "-c",
-  `set -eo pipefail; mkdir -p "${bin}"; v=$(${latestTag}); v=\${v#v}; curl -fsSL "${url}" | tar -xzO "${member}" > "${bin}/${name}"; chmod +x "${bin}/${name}"`,
-];
 
-const winget = (id) => ["winget", "install", "--id", id, "--exact", "--silent", "--accept-package-agreements", "--accept-source-agreements"];
+export const loadRegistry = (path = join(here, "tools.json")) => JSON.parse(readFileSync(path, "utf8"));
 
-// Each tool maps to the commands that install it, per platform.
-export function installers(os) {
-  const windows = os === "win32";
-  return {
-    gh: {
-      win32: [winget("GitHub.cli")],
-      darwin: [["brew", "install", "gh"]],
-      linux: [tarball("gh", "basename $(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/cli/cli/releases/latest)",
-        `https://github.com/cli/cli/releases/download/v$v/gh_\${v}_linux_${cpu}.tar.gz`, `gh_\${v}_linux_${cpu}/bin/gh`)],
-    }[os],
-    glab: {
-      win32: [winget("GLab.GLab")],
-      darwin: [["brew", "install", "glab"]],
-      linux: [tarball("glab", "curl -fsSL https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases/permalink/latest | grep -o '\"tag_name\":\"[^\"]*\"' | cut -d'\"' -f4",
-        `https://gitlab.com/gitlab-org/cli/-/releases/v$v/downloads/glab_\${v}_linux_${cpu}.tar.gz`, "bin/glab")],
-    }[os],
-    // acli is not in winget: Atlassian ships a bare exe, put in ~/.local/bin.
-    acli: {
-      win32: [["curl.exe", "-fsSL", "--create-dirs", "-o", join(bin, "acli.exe"), "https://acli.atlassian.com/windows/latest/acli_windows_amd64/acli.exe"]],
-      darwin: [["brew", "tap", "atlassian/homebrew-acli"], ["brew", "install", "acli"]],
-      linux: [["curl", "-fsSL", "--create-dirs", "-o", join(bin, "acli"), `https://acli.atlassian.com/linux/latest/acli_linux_${cpu}/acli`], ["chmod", "+x", join(bin, "acli")]],
-    }[os],
-    claude: windows
-      ? [["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "irm https://claude.ai/install.ps1 | iex"]]
-      : [["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"]],
-    // Outside Windows, npm's global prefix is often /usr, writable only with sudo.
-    codex: [["npm", "install", "--global", ...(windows ? [] : ["--prefix", join(homedir(), ".local")]), "@openai/codex"]],
-  };
+export const systemValues = () => ({ bin, home: homedir(), cpu: { x64: "amd64", arm64: "arm64" }[arch()] });
+
+export function expand(argv, values) {
+  return argv.map((arg) =>
+    arg.replace(new RegExp(`\\{(${PLACEHOLDERS.join("|")})\\}`, "g"), (_, key) => {
+      if (values[key] === undefined) throw new Error(`no value for {${key}} on this machine (cpu ${arch()})`);
+      return values[key];
+    }),
+  );
 }
 
-const has = (file) => {
+/** What to install for one profile on one platform: the tools in order, each with the command that
+ *  tells whether it is installed and the commands that install it (empty when this platform has none). */
+export function installPlan(registry, { profile, os, values }) {
+  return Object.entries(registry)
+    .filter(([, tool]) => tool.profiles.includes(profile))
+    .map(([name, tool]) => ({
+      name,
+      check: [name, ...(tool.check ?? ["--version"])],
+      commands: (tool.install[os] ?? []).map((argv) => expand(argv, values)),
+    }));
+}
+
+export function parseArgs(argv) {
+  const options = { profile: "host", print: false };
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--print") options.print = true;
+    else if (argv[i] === "--profile") options.profile = argv[++i];
+    else throw new Error(`unknown argument ${argv[i]}`);
+  }
+  if (!PROFILES.includes(options.profile)) throw new Error(`profile must be one of ${PROFILES.join(", ")}, not ${options.profile}`);
+  return options;
+}
+
+const shellQuote = (arg) => (/^[\w@%+=:,./-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", `'\\''`)}'`);
+
+/** One argv as a line a POSIX shell runs the same way. */
+export const commandLine = (argv) => argv.map(shellQuote).join(" ");
+
+const has = ([file, ...args]) => {
   try {
-    execFileSync(file, ["--version"], { stdio: "ignore", shell: platform() === "win32" });
+    execFileSync(file, args, { stdio: "ignore", shell: platform() === "win32" });
     return true;
   } catch {
     return false;
   }
 };
 
-function main() {
-  const windows = platform() === "win32";
-  if (platform() === "darwin" && !has("brew")) {
+/** Installs what is missing, or with print writes the commands that would. */
+export function installTools({ profile, print }) {
+  const os = platform();
+  const windows = os === "win32";
+  const plan = installPlan(loadRegistry(), { profile, os, values: systemValues() });
+
+  if (os === "darwin" && !print && plan.some(({ commands }) => commands.some(([file]) => file === "brew")) && !has(["brew", "--version"])) {
     console.error("Homebrew is missing. Install it from https://brew.sh, then run this again.");
     process.exit(1);
   }
@@ -72,9 +95,18 @@ function main() {
   // ~/.local/bin holds claude and, on Windows, acli; install-claude puts it on PATH for good.
   process.env.PATH = `${bin}${delimiter}${process.env.PATH}`;
 
-  for (const [name, commands] of Object.entries(installers(platform()))) {
-    if (has(name)) {
-      console.log(`${name.padEnd(12)} already installed`);
+  for (const { name, check, commands } of plan) {
+    if (has(check)) {
+      console.log(print ? `# ${name}: already installed` : `${name.padEnd(12)} already installed`);
+      continue;
+    }
+    if (commands.length === 0) {
+      console.log(print ? `# ${name}: no installer for ${os}` : `${name.padEnd(12)} no installer for ${os}`);
+      continue;
+    }
+    if (print) {
+      console.log(`# ${name}`);
+      for (const command of commands) console.log(commandLine(command));
       continue;
     }
     console.log(`${name.padEnd(12)} installing...`);
@@ -89,7 +121,18 @@ function main() {
     console.log(`${name.padEnd(12)} installed`);
   }
 
-  console.log("\nOpen a new terminal, then sign in once: gh auth login, glab auth login, acli jira auth login --web, claude, codex login");
+  if (profile === "host" && !print) {
+    console.log("\nOpen a new terminal, then sign in once: gh auth login, glab auth login, acli jira auth login --web, claude, codex login");
+  }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  let options;
+  try {
+    options = parseArgs(process.argv.slice(2));
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  installTools(options);
+}
