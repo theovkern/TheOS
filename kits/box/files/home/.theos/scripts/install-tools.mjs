@@ -69,10 +69,15 @@ export function parseArgs(argv) {
 
 const shellQuote = (arg) => (/^[\w@%+=:,./-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", `'\\''`)}'`);
 
-/** One argv as a line a POSIX shell runs the same way. */
-export const commandLine = (argv) => argv.map(shellQuote).join(" ");
+/** One argv as text a POSIX shell runs the same way. A `bash -c` script that needs quoting is shown as
+ *  a heredoc, which a person can read before pasting it. */
+export function commandLine(argv) {
+  const [file, flag, script, ...rest] = argv;
+  const readable = file === "bash" && flag === "-c" && rest.length === 0 && /['\n]/.test(script) && !script.includes("THEOS_EOF");
+  return readable ? `bash <<'THEOS_EOF'\n${script}\nTHEOS_EOF` : argv.map(shellQuote).join(" ");
+}
 
-const has = ([file, ...args]) => {
+export const isInstalled = ([file, ...args]) => {
   try {
     execFileSync(file, args, { stdio: "ignore", shell: platform() === "win32" });
     return true;
@@ -81,13 +86,25 @@ const has = ([file, ...args]) => {
   }
 };
 
+export const systemPlan = (profile) => installPlan(loadRegistry(), { profile, os: platform(), values: systemValues() });
+
+export function runCommands(commands) {
+  for (const [file, ...args] of commands) {
+    try {
+      // shell on Windows so npm resolves to npm.cmd.
+      execFileSync(file, args, { stdio: "inherit", shell: platform() === "win32" && file === "npm" });
+    } catch (error) {
+      if (!(file === "winget" && WINGET_ALREADY_INSTALLED.includes(error.status))) throw error;
+    }
+  }
+}
+
 /** Installs what is missing, or with print writes the commands that would. */
 export function installTools({ profile, print }) {
   const os = platform();
-  const windows = os === "win32";
-  const plan = installPlan(loadRegistry(), { profile, os, values: systemValues() });
+  const plan = systemPlan(profile);
 
-  if (os === "darwin" && !print && plan.some(({ commands }) => commands.some(([file]) => file === "brew")) && !has(["brew", "--version"])) {
+  if (os === "darwin" && !print && plan.some(({ commands }) => commands.some(([file]) => file === "brew")) && !isInstalled(["brew", "--version"])) {
     console.error("Homebrew is missing. Install it from https://brew.sh, then run this again.");
     process.exit(1);
   }
@@ -96,7 +113,7 @@ export function installTools({ profile, print }) {
   process.env.PATH = `${bin}${delimiter}${process.env.PATH}`;
 
   for (const { name, check, commands } of plan) {
-    if (has(check)) {
+    if (isInstalled(check)) {
       console.log(print ? `# ${name}: already installed` : `${name.padEnd(12)} already installed`);
       continue;
     }
@@ -110,14 +127,7 @@ export function installTools({ profile, print }) {
       continue;
     }
     console.log(`${name.padEnd(12)} installing...`);
-    for (const [file, ...args] of commands) {
-      try {
-        // shell on Windows so npm resolves to npm.cmd.
-        execFileSync(file, args, { stdio: "inherit", shell: windows && file === "npm" });
-      } catch (error) {
-        if (!(file === "winget" && WINGET_ALREADY_INSTALLED.includes(error.status))) throw error;
-      }
-    }
+    runCommands(commands);
     console.log(`${name.padEnd(12)} installed`);
   }
 

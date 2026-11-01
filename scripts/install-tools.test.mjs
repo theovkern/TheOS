@@ -106,3 +106,12 @@ test("a printed command line runs in a shell with exactly the arguments it was p
   const out = execFileSync("bash", ["-c", `printf '%s\\n' ${commandLine(argv)}`], { encoding: "utf8" }).trimEnd().split("\n");
   assert.deepEqual(out, argv);
 });
+
+test("a bash script with quotes is printed as a heredoc that does what `bash -c` would", () => {
+  const script = "set -e\necho \"it's $HOME\"\necho 'single' | tr a-z A-Z";
+  const printed = commandLine(["bash", "-c", script]);
+  assert.match(printed, /^bash <<'THEOS_EOF'\n/);
+  const run = (args, input) => execFileSync("bash", args, { encoding: "utf8", input });
+  assert.equal(run(["-c", printed]), run(["-c", script]));
+  assert.equal(commandLine(["bash", "-c", "echo hi"]), "bash -c 'echo hi'");
+});
