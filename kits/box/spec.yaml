@@ -13,11 +13,13 @@ args:
     pattern: '^(https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+)?$'
 
 # These bite only under `sbx policy init deny-all`; the default policy allows far more.
-# The plugin and clone steps reach github.com and nothing else.
+# Seen in `sbx policy log`: the plugin and clone steps reach github.com, and
+# mattpocock-skills installs its dependencies from registry.npmjs.org.
 permissions:
   network:
     allow:
       - github.com
+      - registry.npmjs.org
 
 # sbx rewrites ~/.claude/settings.json when it creates the box, so the plugins and the guard are
 # wired here, after that, and the guard last because installing a plugin rewrites the file too.
