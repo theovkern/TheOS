@@ -11,13 +11,14 @@ It holds no project code.
 | `skills/` | Skills I wrote. Their only copy. |
 | `hooks/` | The global command guard and its denylist. |
 | `rules/` | Claude Code rules, linked as `~/.claude/rules`. Holds my pstack model choices. |
-| `scripts/` | The skill linker and the hook installer. |
+| `scripts/` | The skill linker, the installers, and the agent-box commands. `tools.json` lists the tools each kind of machine gets. |
+| `kits/` | The sbx kit that builds an agent box. |
 | `agents/` | Subagent definitions. |
 | `commands/` | Slash commands. |
 | `tools/` | Standalone utilities. |
 | `docs/adr/` | Why things are the way they are. |
 | `docs/specs/` | What was built and why. |
-| `setup/` | New-machine restore notes. |
+| `setup/` | New-machine and new-server restore notes. |
 | `projects/` | A working directory. Its children are ignored; every project has its own repository. |
 
 ## Setup on a new machine
@@ -36,6 +37,23 @@ harness and registers the command guard. No dependencies to install: every step 
 Node with nothing underneath it.
 
 Full notes in [`setup/`](./setup/).
+
+## Agent boxes
+
+Always-on [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) microVMs, each running Claude Code
+with my plugins, the command guard and my model rules, defined once in [`kits/box`](./kits/box).
+A leaked token is the threat, so a box holds only a placeholder and the host proxy injects the real
+one.
+
+```sh
+npm run box -- new <name> [owner/repo]   # define, create, start and check a box
+npm run box -- ls
+npm run box -- rm <name>
+```
+
+[`setup/new-server.md`](./setup/new-server.md) makes a Linux machine the host for them
+(`npm run setup-server`). The kit holds copies of a few files from this repository, because a kit
+is one directory. `npm run sync-kit` refreshes them and `npm test` fails when one is stale.
 
 ## My skills
 

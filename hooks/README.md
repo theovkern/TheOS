@@ -33,8 +33,10 @@ One executable serves three harnesses. The flag picks the reply format.
 | Claude Code | `~/.claude/settings.json` → `hooks.PreToolUse`, matcher `Bash` | `--claude` | exit 2, reason on stderr |
 | Cursor | `~/.cursor/hooks.json` → `beforeShellExecution` | `--cursor` | `{"permission":"deny"}` on stdout |
 | Codex | `~/.codex/hooks.json` → `PreToolUse`, matcher `Bash` | `--codex` | exit 2, reason on stderr |
+| Claude Code in an agent box | `~/.claude/settings.json` in the box, wired by the kit | `--claude` | exit 2, reason on stderr |
 
-Re-register on a new machine with `npm run install-hooks`.
+Re-register on a new machine with `npm run install-hooks`. The Claude Code entry is written by
+`scripts/wire-guard.mjs`, which the box kit also runs, so both place it the same way.
 
 Codex runs a hook only after you trust it. After each install, start `codex`, run `/hooks`, and trust the guard. Until then, Codex runs every command unguarded.
 

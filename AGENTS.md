@@ -50,10 +50,22 @@ theovkern/TheOS` installs from this repository. Bump a plugin's `version` in its
 ## Command guard
 
 `hooks/deny-dangerous.mjs` blocks catastrophic shell commands in every repository on this
-machine, registered in Claude Code, Cursor and Codex. See `hooks/README.md`.
+machine, registered in Claude Code, Cursor and Codex, and in every agent box. See
+`hooks/README.md`.
 
 If the guard blocks a command: explain the block to the user. Do not retry it, do not
 rephrase it to slip past the pattern, and do not disable the guard.
+
+## Agent boxes
+
+`kits/box` is the sbx kit behind `npm run box`. Its `files/` folder holds **copies** of repo
+files (the list is `KIT_COPIES` in `scripts/sync-kit.mjs`). Never edit a copy: edit the source,
+then run `npm run sync-kit`. `npm test` fails while any copy differs.
+
+Tools come from `scripts/tools.json`, one entry per tool with the profiles that install it
+(`host`, `server`, `box`) and its commands per platform. Add a tool there, not in a script.
+
+Removing a sandbox is the user's to do: Claude Code's classifier blocks an agent from it.
 
 ## Projects
 
