@@ -1,0 +1,55 @@
+schemaVersion: "2"
+kind: mixin
+name: theos-box
+displayName: TheOS box
+description: TheOS plugins, command guard and model rules on top of the built-in claude agent, plus an optional public repo clone.
+requires:
+  agent: claude
+
+args:
+  repo:
+    default: ""
+    description: Public https://github.com/<owner>/<name> URL, cloned into ~/work/<name>. Empty skips the clone.
+    pattern: '^(https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+)?$'
+
+# These bite only under `sbx policy init deny-all`; the default policy allows far more.
+# The plugin and clone steps reach github.com and nothing else.
+permissions:
+  network:
+    allow:
+      - github.com
+
+# sbx rewrites ~/.claude/settings.json when it creates the box, so the plugins and the guard are
+# wired here, after that, and the guard last because installing a plugin rewrites the file too.
+setup:
+  install:
+    - description: Install the tools the box profile lists (scripts/tools.json)
+      user: "1000"
+      command: HOME=/home/agent PATH=/home/agent/.local/bin:$PATH node /home/agent/.theos/scripts/install-tools.mjs --profile box
+
+    - description: Install the plugins TheOS installs (scripts/install-claude.mjs)
+      user: "1000"
+      command: |
+        set -e
+        export HOME=/home/agent PATH=/home/agent/.local/bin:$PATH
+        for m in anthropics/claude-plugins-official cursor/plugins; do
+          claude plugin marketplace add "$m"
+        done
+        for p in mattpocock-skills@claude-plugins-official pstack@cursor-plugins; do
+          claude plugin install "$p" --scope user
+        done
+
+    - description: Wire the command guard into ~/.claude/settings.json
+      user: "1000"
+      command: HOME=/home/agent node /home/agent/.theos/scripts/wire-guard.mjs
+
+    - description: Clone the repo into ~/work/<name>
+      user: "1000"
+      command: |
+        set -e
+        repo='${{ kit.args.repo }}'
+        [ -n "$repo" ] || exit 0
+        dest=/home/agent/work/$(basename "$repo" .git)
+        [ -d "$dest/.git" ] && exit 0
+        mkdir -p /home/agent/work
+        GIT_TERMINAL_PROMPT=0 git clone "$repo" "$dest"

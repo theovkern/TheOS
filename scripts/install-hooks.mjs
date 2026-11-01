@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { mentionsGuard, wireClaudeGuard } from "./wire-guard.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const guard = join(repoRoot, "hooks", "deny-dangerous.mjs");
@@ -18,18 +19,10 @@ const writeJson = (path, value) => {
 };
 
 const command = (flag) => `node "${guard}" --${flag}`;
-const mentionsGuard = (entry) => JSON.stringify(entry).includes("deny-dangerous");
 
 // --- Claude Code: PreToolUse, blocks on exit 2 -------------------------------
 const claudePath = join(home, ".claude", "settings.json");
-const claude = readJson(claudePath, {});
-claude.hooks ??= {};
-claude.hooks.PreToolUse = (claude.hooks.PreToolUse ?? []).filter((e) => !mentionsGuard(e));
-claude.hooks.PreToolUse.push({
-  matcher: "Bash",
-  hooks: [{ type: "command", command: command("claude"), timeout: 10 }],
-});
-writeJson(claudePath, claude);
+wireClaudeGuard(claudePath, guard);
 console.log(`Claude Code  ${claudePath}`);
 
 // --- Cursor: beforeShellExecution, blocks via JSON on stdout -----------------
