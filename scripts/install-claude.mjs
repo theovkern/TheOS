@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, symlinkS
 import { homedir, platform } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ACCOUNTS } from "./claude-use.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const statusline = join(repoRoot, "statusline", "statusline.mjs");
@@ -43,28 +44,11 @@ const writeBlock = (path, lines) => {
   console.log(`${next === old ? "unchanged" : "updated  "}  ${path}`);
 };
 
-// A second Claude account lives in its own CLAUDE_CONFIG_DIR, since that folder holds the login.
-// claude-use stores the choice as a user env var, so `cc`, other terminals and the IDE follow it;
-// claude-work and claude-personal override it for one launch.
-const WORK_DIR = join(home, ".claude-work");
-const ACCOUNT_FUNCTIONS = [
-  "function claude-use([ValidateSet('personal','work')][string]$acct) {",
-  "  if (-not $acct) {",
-  "    $now = if ([Environment]::GetEnvironmentVariable('CLAUDE_CONFIG_DIR', 'User')) { 'work' } else { 'personal' }",
-  "    \"Usage: claude-use <personal|work>\"",
-  "    \"  personal   default account (~\\.claude)\"",
-  "    \"  work       work account (~\\.claude-work)\"",
-  "    \"Current default: $now. One launch only: claude-personal, claude-work\"",
-  "    return",
-  "  }",
-  "  $dir = if ($acct -eq 'work') { \"$HOME\\.claude-work\" } else { $null }",
-  "  [Environment]::SetEnvironmentVariable('CLAUDE_CONFIG_DIR', $dir, 'User')",
-  "  if ($dir) { $env:CLAUDE_CONFIG_DIR = $dir } else { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue }",
-  "  \"Claude account: $acct (open terminals and apps keep the old one until restarted)\"",
-  "}",
-  "function claude-personal { $old = $env:CLAUDE_CONFIG_DIR; Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue; try { claude @args } finally { if ($old) { $env:CLAUDE_CONFIG_DIR = $old } } }",
-  "function claude-work { $old = $env:CLAUDE_CONFIG_DIR; $env:CLAUDE_CONFIG_DIR = \"$HOME\\.claude-work\"; try { claude @args } finally { if ($old) { $env:CLAUDE_CONFIG_DIR = $old } else { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue } } }",
-];
+// `claude-use <account>` swaps the login every session uses; see scripts/claude-use.mjs.
+// The wrapper only adds tab completion and rejects unknown names before Node starts.
+const accountSet = ACCOUNTS.map((a) => `'${a}'`).join(",");
+const claudeUse = join(repoRoot, "scripts", "claude-use.mjs");
+const CLAUDE_USE = `function claude-use([ValidateSet(${accountSet})][string]$acct) { if ($acct) { node "${claudeUse}" $acct } else { node "${claudeUse}" } }`;
 
 // --- Claude Code: installed by install-tools, into ~/.local/bin ----------------
 process.env.PATH = `${bin}${delimiter}${process.env.PATH}`;
@@ -91,7 +75,7 @@ if (windows) {
   const profiles = [powershell("$PROFILE")];
   const pwsh = tryRun("pwsh", ["-NoProfile", "-Command", "$PROFILE"]);
   if (pwsh) profiles.push(pwsh);
-  for (const profile of profiles) writeBlock(profile, ["Set-Alias -Name cc -Value claude", ...ACCOUNT_FUNCTIONS]);
+  for (const profile of profiles) writeBlock(profile, ["Set-Alias -Name cc -Value claude", CLAUDE_USE]);
 }
 
 // Git Bash on Windows reads ~/.bashrc too, so the POSIX block goes everywhere.
@@ -132,33 +116,6 @@ for (const marketplace of MARKETPLACES) {
 for (const plugin of PLUGINS) {
   run("claude", ["plugin", "install", plugin, "--scope", "user"]);
   console.log(`plugin       ${plugin}`);
-}
-
-// --- Work account: ~/.claude-work shares my config, keeps its own login ----------
-// Only the login and history stay apart. Folders are junctions, which need no
-// Developer Mode; a file symlink does, so settings.json says so instead of failing.
-if (windows) {
-  mkdirSync(WORK_DIR, { recursive: true });
-  for (const item of ["skills", "plugins", "rules", "settings.json"]) {
-    const target = join(home, ".claude", item);
-    const link = join(WORK_DIR, item);
-    if (!existsSync(target)) continue;
-    if (existsSync(link) && realpathSync(link).toLowerCase() === realpathSync(target).toLowerCase()) {
-      console.log(`work account ${link}, already linked`);
-      continue;
-    }
-    if (existsSync(link)) {
-      renameSync(link, `${link}-replaced`);
-      console.log(`work account parked the old ${item} in ${link}-replaced`);
-    }
-    try {
-      symlinkSync(target, link, item === "settings.json" ? "file" : "junction");
-      console.log(`work account ${link} -> ${target}`);
-    } catch (err) {
-      if (err.code !== "EPERM") throw err;
-      console.log(`work account ${link} needs Developer Mode or an admin terminal to link; rerun from one`);
-    }
-  }
 }
 
 console.log("\nOpen a new terminal for PATH and `cc`. Then run /setup-matt-pocock-skills and /pstack:setup-pstack once.");

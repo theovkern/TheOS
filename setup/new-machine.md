@@ -24,7 +24,7 @@ npm run setup
 | Step | What it does |
 |---|---|
 | `npm run install-tools` | Installs `gh`, `glab`, Atlassian's `acli` (for Jira), Claude Code and Codex. winget on Windows, Homebrew on macOS, release binaries in `~/.local/bin` on Linux (no sudo; delete one and rerun to upgrade it); Claude Code by its native installer and Codex by npm, because those auto-update and the packaged builds do not. Sign in afterwards: `gh auth login`, `glab auth login`, `acli jira auth login --web`, `claude`, `codex login` |
-| `npm run install-claude` | Puts Claude Code on PATH, adds the `cc` alias, registers the status line, links `~/.claude/rules` to `rules/`, installs Matt's set, pstack and pstack-codex. On Windows it also adds `claude-use work\|personal` (switches the default account until switched back) and `claude-work`/`claude-personal` (one launch), and links `~/.claude-work` to share my config while keeping its own login. Log in there once: `claude-work`, then `/login` |
+| `npm run install-claude` | Puts Claude Code on PATH, adds the `cc` alias, registers the status line, links `~/.claude/rules` to `rules/`, installs Matt's set, pstack and pstack-codex. On Windows it also adds `claude-use work\|personal`, which swaps the login of every Claude session, running ones included. First time on an account: `claude-use work`, then `/login` in any session |
 | `npm run link` | Symlinks my skills into every harness |
 | `npm run install-hooks` | Registers the command guard in Claude Code, Cursor, Codex |
 | `npm run install-shell` | Windows only: installs posh-git for git tab completion and loads it on the first `git <Tab>`, so new shells start without its ~1.5 s import |
