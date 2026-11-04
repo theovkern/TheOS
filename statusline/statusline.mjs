@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Status line: Model | Effort | Tokens | 5h [bar] | 7d | Resets | Codex 5h [bar] | Codex 7d | Codex Resets
+// Status line: Model | Effort | Tokens | 5h [bar] | 7d | Resets | Codex 5h [bar] | Codex 7d | Codex Resets | Codex live
 // `node statusline.mjs` renders the line from Claude Code's JSON on stdin.
 // `node statusline.mjs --refresh-codex` saves the live Codex limits to the cache.
 //
@@ -17,6 +17,7 @@ import { fileURLToPath } from "node:url";
 const CACHE = join(homedir(), ".cache", "theos", "codex-limits.json");
 const CACHE_MAX_AGE_S = 60;
 const REFRESH_LOCK_S = 30;
+const LIVE_MAX_AGE_S = 300;
 
 const RESET = "\x1b[0m";
 const DIM_CYAN = "\x1b[2;36m";
@@ -118,9 +119,8 @@ function tail(path, bytes) {
   }
 }
 
-// Fallback when there is no cache: the newest `rate_limits` entry in the newest session logs.
-// Only the newest dated folders are listed, and only the last 1 MB of a file is read.
-function codexLimitsFromLogs() {
+// Session logs in the newest dated folders, newest first.
+function recentRollouts() {
   const base = join(homedir(), ".codex", "sessions");
   const subdirs = (path) => {
     try {
@@ -142,8 +142,13 @@ function codexLimitsFromLogs() {
             }
         } catch {}
       }
-  files.sort((a, b) => b.mtime - a.mtime);
-  for (const { path } of files.slice(0, 3)) {
+  return files.sort((a, b) => b.mtime - a.mtime);
+}
+
+// Fallback when there is no cache: the newest `rate_limits` entry in the newest session logs.
+// Only the last 1 MB of a file is read.
+function codexLimitsFromLogs() {
+  for (const { path } of recentRollouts().slice(0, 3)) {
     let text;
     try {
       text = tail(path, 1048576);
@@ -160,6 +165,22 @@ function codexLimitsFromLogs() {
   }
   return null;
 }
+
+// Rough count for Codex runs in progress: the last `total_tokens` of each session log
+// written in the last few minutes, summed. Codex seats and interactive sessions both count.
+function liveCodexTokens() {
+  const live = recentRollouts().filter((f) => Date.now() - f.mtime < LIVE_MAX_AGE_S * 1000);
+  let sum = 0;
+  for (const { path } of live) {
+    try {
+      const matches = [...tail(path, 1048576).matchAll(/"total_tokens":(\d+)/g)];
+      if (matches.length) sum += Number(matches.at(-1)[1]);
+    } catch {}
+  }
+  return live.length ? sum : null;
+}
+
+const fmtTokens = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n));
 
 function codexLimits() {
   const age = ageSeconds(CACHE);
@@ -210,6 +231,12 @@ function render(d) {
     ]);
     if (codexResets) parts.push(codexResets);
   }
+
+  let live = null;
+  try {
+    live = liveCodexTokens();
+  } catch {}
+  if (live !== null) parts.push(wrap(BOLD_BLUE, "Codex live: " + fmtTokens(live)));
   return parts.join(" | ");
 }
 
