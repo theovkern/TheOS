@@ -1,18 +1,29 @@
 #!/usr/bin/env node
 // Gives Windows PowerShell git tab completion (branches, remotes, commands) via posh-git.
-// Safe to run twice: the module installs only when missing, the profile lines only when absent.
+// posh-git loads on the first git <Tab>, not at startup: importing it costs ~1.5 s per new shell.
+// Safe to run twice: the module installs only when missing, the profile block only when absent.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const PROFILE_LINES = ["Import-Module posh-git", "$GitPromptSettings.EnablePromptStatus = $false"];
+const EAGER_BLOCK = "Import-Module posh-git\n$GitPromptSettings.EnablePromptStatus = $false\n";
+
+export const PROFILE_BLOCK = `Register-ArgumentCompleter -Native -CommandName git, tgit, gitk -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    Import-Module posh-git -Global
+    $GitPromptSettings.EnablePromptStatus = $false
+    $line = $commandAst.Extent.Text
+    $column = $cursorPosition - $commandAst.Extent.StartOffset
+    (TabExpansion2 -inputScript $line.PadRight($column) -cursorColumn $column).CompletionMatches
+}
+`;
 
 export function withPoshGit(profile) {
+  if (profile.includes(EAGER_BLOCK)) return profile.replace(EAGER_BLOCK, PROFILE_BLOCK);
   if (/^\s*Import-Module\s+posh-git\b/im.test(profile)) return profile;
-  const block = PROFILE_LINES.join("\n") + "\n";
-  if (profile.trim() === "") return block;
-  return block + "\n" + profile;
+  if (profile.trim() === "") return PROFILE_BLOCK;
+  return PROFILE_BLOCK + "\n" + profile;
 }
 
 const powershell = (script) =>
