@@ -48,7 +48,15 @@ const writeBlock = (path, lines) => {
 // claude-work and claude-personal override it for one launch.
 const WORK_DIR = join(home, ".claude-work");
 const ACCOUNT_FUNCTIONS = [
-  "function claude-use([ValidateSet('personal','work')]$acct) {",
+  "function claude-use([ValidateSet('personal','work')][string]$acct) {",
+  "  if (-not $acct) {",
+  "    $now = if ([Environment]::GetEnvironmentVariable('CLAUDE_CONFIG_DIR', 'User')) { 'work' } else { 'personal' }",
+  "    \"Usage: claude-use <personal|work>\"",
+  "    \"  personal   default account (~\\.claude)\"",
+  "    \"  work       work account (~\\.claude-work)\"",
+  "    \"Current default: $now. One launch only: claude-personal, claude-work\"",
+  "    return",
+  "  }",
   "  $dir = if ($acct -eq 'work') { \"$HOME\\.claude-work\" } else { $null }",
   "  [Environment]::SetEnvironmentVariable('CLAUDE_CONFIG_DIR', $dir, 'User')",
   "  if ($dir) { $env:CLAUDE_CONFIG_DIR = $dir } else { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue }",
