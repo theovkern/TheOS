@@ -40,7 +40,7 @@ run)
   # The elevated one runs as a separate account whose default policy refuses npm.ps1.
   args=(exec -m "$model" -c 'windows.sandbox="elevated"'
     -c 'shell_environment_policy.set.PSExecutionPolicyPreference="RemoteSigned"'
-    -C "$dir" --skip-git-repo-check --ephemeral --color never -o "$run/out.txt")
+    -C "$dir" --skip-git-repo-check --color never -o "$run/out.txt")
   case $effort in
     session) ;;
     max) args+=(-c model_reasoning_effort=xhigh) ;;
