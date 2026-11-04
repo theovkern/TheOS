@@ -29,7 +29,8 @@ npm run setup
 ```
 
 That installs Claude Code with its official installer and puts `~/.local/bin` on PATH. It
-adds a `cc` alias for `claude` in bash, zsh and PowerShell, registers my status line, and
+adds a `cc` alias for `claude` in bash, zsh and PowerShell, plus `claude-use work|personal` in
+PowerShell to switch between two Claude accounts. It registers my status line, and
 installs Matt's set, pstack and my pstack-codex as Claude Code plugins. Then it links my skills into every
 harness and registers the command guard. No dependencies to install: every step is plain
 Node with nothing underneath it.
