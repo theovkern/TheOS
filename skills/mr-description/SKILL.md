@@ -1,11 +1,11 @@
 ---
 name: mr-description
-description: Write a merge request or pull request description from a fixed template (why, changes, results, risk and blast radius) and write it onto the branch's open MR with `glab`, else return it in the chat. Use when the user asks for an MR or PR description, body, or text.
+description: Write a merge request or pull request description from a fixed template (why, changes, results, risk and blast radius) and write it onto the branch's open MR with `glab`, else to a file. Use when the user asks for an MR or PR description, body, or text.
 ---
 
 # MR description
 
-You write the description. `glab` comes first: when the branch has an open MR, you write the description onto it. The chat is the fallback.
+You write the description. `glab` comes first: when the branch has an open MR, you write the description onto it. A file in the scratchpad is the fallback.
 
 1. Find the **MR**: `glab mr view <branch> --output json`. When it returns an open MR, it gives the target branch, the MR number, and the **current description**. When `glab` is missing or fails, or no MR is open, go on without one.
 2. Collect the **facts**:
@@ -28,8 +28,9 @@ You write the description. `glab` comes first: when the branch has an open MR, y
    - With a current description, **amend** it. Compare it line by line with the facts. Keep every line that is still true, word for word: the user's wording, extra sections, screenshots, links. Edit the lines the facts contradict. Add the facts it is missing, in the template's section for them. Done when every fact is in the text and every line left is true. Then apply the **Ending** rules below.
    - Fill the template below when the description is empty, or when it describes none of the current diff (the history was rewritten).
 5. Run the `pstack:unslop` skill on the lines you wrote. Keep the headings and the facts.
-6. With an open MR, write the description to a file in the scratchpad and run `glab mr update <number> --description-file <file>`. Reply with the MR link and one line per section you changed.
-7. Without an open MR, or when `glab mr update` fails, reply with the description in one fenced block opened with four backticks and `markdown`, so code blocks inside it survive the copy. Put nothing else in the block. Add the `glab` error in one line when there was one.
+6. Write the description to `mr-description.md` in the scratchpad. That file and the MR are its only homes; your reply carries a link or a path, never the text.
+7. With an open MR, run `glab mr update <number> --description-file <file>`. Reply with the MR link and one line per section you changed.
+8. Without an open MR, or when `glab mr update` fails, reply with the file's full absolute path. Add the `glab` error in one line when there was one.
 
 ## Template
 
