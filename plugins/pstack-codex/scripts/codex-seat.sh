@@ -36,6 +36,13 @@ run)
   fi
   pstack=$(winpath "${pstack%/}")
 
+  # The status line shows the tokens of the seats its own Claude session started.
+  seats=~/.cache/theos/codex-seats/${CLAUDE_CODE_SESSION_ID:-none}
+  mkdir -p "$seats"
+  entry="$seats/$(basename "$run")"
+  printf '%s\n' "$run" > "$entry"
+  trap 'rm -f "$entry"' EXIT
+
   # The unelevated Windows sandbox blocks child processes, so npm install fails with EPERM -4048.
   # The elevated one runs as a separate account whose default policy refuses npm.ps1.
   args=(exec -m "$model" -c 'windows.sandbox="elevated"'

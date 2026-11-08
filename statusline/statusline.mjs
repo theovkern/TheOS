@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Status line: Model | Effort | Tokens | 5h [bar%] reset | 7d % reset | Codex | 5h [bar%] reset | 7d % reset | live
+// Status line: Model | Effort | Tokens | 5h [bar%] reset | 7d % reset | Codex | 5h [bar%] reset | 7d % reset | <codex seat model>: tokens
 // `node statusline.mjs` renders the line from Claude Code's JSON on stdin.
 // `node statusline.mjs --refresh-codex` saves the live Codex limits to the cache.
 //
@@ -8,7 +8,7 @@
 //   - Bold blue = context usage (Tokens).
 //   - Traffic light = usage meters, by percent spent: <33 green, <66 yellow, else red.
 import { spawn } from "node:child_process";
-import { closeSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,7 +16,8 @@ import { fileURLToPath } from "node:url";
 const CACHE = join(homedir(), ".cache", "theos", "codex-limits.json");
 const CACHE_MAX_AGE_S = 60;
 const REFRESH_LOCK_S = 30;
-const LIVE_MAX_AGE_S = 300;
+const SEATS = join(homedir(), ".cache", "theos", "codex-seats");
+const SEAT_STALE_S = 1800;
 
 const RESET = "\x1b[0m";
 // Halfway between Campbell cyan (#3A96DD) and its dimmed form on the black background.
@@ -176,18 +177,35 @@ function codexLimitsFromLogs() {
   return null;
 }
 
-// Rough count for Codex runs in progress: the last `total_tokens` of each session log
-// written in the last few minutes, summed. Codex seats and interactive sessions both count.
-function liveCodexTokens() {
-  const live = recentRollouts().filter((f) => Date.now() - f.mtime < LIVE_MAX_AGE_S * 1000);
-  let sum = 0;
-  for (const { path } of live) {
+// Context size, as of the last model call, of each pstack-codex seat this Claude session
+// started and that is still running. Like Claude's own count, it includes cached input. codex-seat.sh registers each seat as a file holding its run folder, and
+// the seat's log names the Codex session whose log carries the count. An entry outlives a
+// killed seat, so one whose logs went quiet for SEAT_STALE_S no longer counts.
+function liveSeatTokens(sessionId) {
+  const dir = join(SEATS, sessionId);
+  let entries;
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  let rollouts;
+  const seats = [];
+  for (const entry of entries) {
     try {
-      const matches = [...tail(path, 1048576).matchAll(/"total_tokens":(\d+)/g)];
-      if (matches.length) sum += Number(matches.at(-1)[1]);
+      const run = readFileSync(join(dir, entry), "utf8").trim();
+      if (existsSync(join(run, "exit"))) continue;
+      const id = readFileSync(join(run, "log.txt"), "utf8").match(/^session id: (\S+)/m)?.[1];
+      rollouts ??= id && recentRollouts();
+      const rollout = id && rollouts.find((f) => f.path.endsWith(`-${id}.jsonl`))?.path;
+      const age = ageSeconds(rollout ?? join(dir, entry));
+      if (age === null || age > SEAT_STALE_S) continue;
+      const inputs = rollout ? [...tail(rollout, 1048576).matchAll(/"last_token_usage":\{"input_tokens":(\d+)/g)] : [];
+      const model = readFileSync(join(run, "model"), "utf8").trim();
+      seats.push({ model, tokens: inputs.length ? Number(inputs.at(-1)[1]) : 0 });
     } catch {}
   }
-  return live.length ? sum : null;
+  return seats;
 }
 
 const fmtTokens = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n));
@@ -234,11 +252,11 @@ function render(d) {
     if (codexParts.length) parts.push([wrap(CYAN, "Codex"), ...codexParts].join(" | "));
   }
 
-  let live = null;
+  let seats = null;
   try {
-    live = liveCodexTokens();
+    if (d.session_id) seats = liveSeatTokens(d.session_id);
   } catch {}
-  if (live !== null) parts.push(wrap(BOLD_BLUE, "live: " + fmtTokens(live)));
+  for (const seat of seats ?? []) parts.push(wrap(BOLD_BLUE, `${seat.model}: ${fmtTokens(seat.tokens)}`));
   return parts.join(" | ");
 }
 
