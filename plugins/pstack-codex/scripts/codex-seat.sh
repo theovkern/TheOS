@@ -8,12 +8,6 @@ winpath() {
   if command -v cygpath >/dev/null; then cygpath -m "$1"; else printf '%s\n' "$1"; fi
 }
 
-preamble() {
-  cat <<EOF
-You are one seat in a pstack workflow, and you work by its principles. Before any other work, read $1/skills/poteto-mode/SKILL.md in full. Then read in full every $1/skills/principle-*/SKILL.md whose trigger fits the task below, and apply each one. When a pstack file names a skill, read $1/skills/<name>/SKILL.md. Name the principle behind each finding or choice. Do not run a playbook, keep a todolist, or spawn agents: the chat that sent this brief does that. The pstack files use Cursor tool names, so skip any step that needs a tool you lack, and say which check you skipped so the chat can run it.
-EOF
-}
-
 writer_note() {
   cat <<'EOF2'
 You may edit files in the working directory and install its dependencies. The sandbox keeps .git read-only, so leave your changes uncommitted: the chat commits them. If a command fails with EPERM or a sandbox denial, do not work around it. Report the command and the error, so the chat can run it.
@@ -28,14 +22,6 @@ new)
 run)
   run=$2 model=$3 effort=$4 readonly=$5 dir=$6
   printf '%s\n' "$model" > "$run/model"
-  pstack=$(ls -d ~/.claude/plugins/cache/cursor-plugins/pstack/*/ 2>/dev/null | sort -V | tail -n 1)
-  if [ -z "$pstack" ]; then
-    echo 'official pstack not installed' > "$run/log.txt"
-    echo 1 > "$run/exit"
-    exit 1
-  fi
-  pstack=$(winpath "${pstack%/}")
-
   # The status line shows the tokens of the seats its own Claude session started.
   seats=~/.cache/theos/codex-seats/${CLAUDE_CODE_SESSION_ID:-none}
   mkdir -p "$seats"
@@ -63,7 +49,7 @@ run)
     fi
   fi
 
-  { preamble "$pstack"; [ "$readonly" = true ] || writer_note; echo; cat "$run/brief.txt"; } | codex "${args[@]}" - > "$run/log.txt" 2>&1
+  { [ "$readonly" = true ] || { writer_note; echo; }; cat "$run/brief.txt"; } | codex "${args[@]}" - > "$run/log.txt" 2>&1
   echo $? > "$run/exit"
   ;;
 
