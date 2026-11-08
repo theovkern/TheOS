@@ -14,12 +14,18 @@ Runs [pstack](https://github.com/cursor/plugins/tree/main/pstack) role seats on 
    claude plugin install pstack-codex@theos
    ```
 
-3. Add these lines to `~/.claude/rules/pstack-models.md`. The first line is a comment, and the others add a Codex seat to a role's list:
+3. Add these lines to `~/.claude/rules/pstack-models.md`. The first two lines are comments, and the others add a Codex seat to a role:
 
    ```text
    # `codex:<model> <effort>` entry: spawn `pstack-codex:codex` for it, as that agent's description says. This overrides the adapter's row for `gpt-*` slugs.
+   # A list on a role the skill reads as one model, such as `why investigators` or `how explorer`: run each spawn of that role once per entry, with the same brief. Skip an entry that cannot reach what the spawn needs, such as a `codex:` entry for a spawn that needs an MCP, and say so. Hand every report to the next step, labeled with its model.
    interrogate reviewers: opus xhigh, sonnet xhigh, codex:gpt-6-astra xhigh
+   why investigators: sonnet xhigh, codex:gpt-6-luna xhigh
    ```
+
+## Lists on single-model roles
+
+pstack reads a list only on its panel roles, such as `interrogate reviewers`. Every other role takes one model. The second comment line lets any role take a list, so two model families answer the same brief side by side. With `why investigators: sonnet xhigh, codex:gpt-6-luna xhigh`, the source-control investigator runs on both models, and the synthesizer gets both reports. The Jira and Confluence investigators run on Sonnet only, because Codex has no MCP access.
 
 ## Code-writing seats
 
