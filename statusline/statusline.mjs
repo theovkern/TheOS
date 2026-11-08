@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-// Status line: Model | Effort | Tokens | 5h [bar] | 7d | Resets | Codex 5h [bar] | Codex 7d | Codex Resets | Codex live
+// Status line: Model | Effort | Tokens | 5h [bar%] reset | 7d % reset | Codex | 5h [bar%] reset | 7d % reset | live
 // `node statusline.mjs` renders the line from Claude Code's JSON on stdin.
 // `node statusline.mjs --refresh-codex` saves the live Codex limits to the cache.
 //
 // Color scheme (tuned for a terminal that renders dimmed colors):
-//   - Dim cyan  = identity/session info (Model, Effort) and reset times.
+//   - Cyan      = identity/session info (Model, Effort), reset times and the "Codex" label.
 //   - Bold blue = context usage (Tokens).
 //   - Traffic light = usage meters, by percent spent: <33 green, <66 yellow, else red.
-//   - Bold cyan = the "Resets:" labels and their "5h"/"7d" markers.
 import { spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -20,15 +19,27 @@ const REFRESH_LOCK_S = 30;
 const LIVE_MAX_AGE_S = 300;
 
 const RESET = "\x1b[0m";
-const DIM_CYAN = "\x1b[2;36m";
+// Halfway between Campbell cyan (#3A96DD) and its dimmed form on the black background.
+const CYAN = "\x1b[0;38;2;46;115;168m";
 const BOLD_BLUE = "\x1b[1;34m";
-const BOLD_CYAN = "\x1b[1;36m";
 
 const wrap = (code, text) => code + text + RESET;
 const tierColor = (pct) => (pct < 33 ? "\x1b[1;32m" : pct < 66 ? "\x1b[1;33m" : "\x1b[1;31m");
-const bar = (pct, width = 10) => {
+// A rounded bar drawn with background colors, so the percentage sits on it without breaking it.
+// Filled cells take the tier color, empty cells dark gray.
+const pctBar = (pct, width = 10) => {
   const filled = Math.max(0, Math.min(width, Math.round((pct / 100) * width)));
-  return "█".repeat(filled) + "░".repeat(width - filled);
+  const label = `${pct}%`;
+  const start = Math.floor((width - label.length) / 2);
+  const fill = pct < 33 ? "42" : pct < 66 ? "43" : "41";
+  let out = "";
+  for (let i = 0; i < width; i++) {
+    const ch = i >= start && i < start + label.length ? label[i - start] : " ";
+    out += (i < filled ? `\x1b[1;30;${fill}m` : "\x1b[1;38;5;249;48;5;237m") + ch;
+  }
+  // Half-circle caps (Powerline U+E0B6/U+E0B4) in the color of the cell beside them.
+  const cap = (filledCell) => (filledCell ? `\x1b[0;3${fill[1]}m` : "\x1b[0;38;5;237m");
+  return cap(filled > 0) + "\ue0b6" + out + cap(filled >= width) + "\ue0b4" + RESET;
 };
 const toPct = (value) => {
   const n = Number(value);
@@ -45,12 +56,11 @@ function fmtReset(epochSeconds) {
   return reset.toDateString() === new Date().toDateString() ? time : `${DAYS[reset.getDay()]} ${time}`;
 }
 
-const resetsSegment = (label, entries) => {
-  const bits = entries
-    .map(([marker, ts]) => [marker, fmtReset(ts)])
-    .filter(([, time]) => time !== null)
-    .map(([marker, time]) => wrap(BOLD_CYAN, marker) + " " + wrap(DIM_CYAN, time));
-  return bits.length ? wrap(BOLD_CYAN, label) + " " + bits.join(" | ") : null;
+// One usage window: its meter, then its reset time.
+const windowSegment = (label, pct, resetsAt, withBar) => {
+  const meter = withBar ? wrap(tierColor(pct), `${label}:`) + " " + pctBar(pct) : wrap(tierColor(pct), `${label}: ${pct}%`);
+  const reset = fmtReset(resetsAt);
+  return reset ? meter + " " + wrap(CYAN, reset) : meter;
 };
 
 // Takes a `rate_limits` object as Codex session logs and the cache store it. A window
@@ -195,27 +205,22 @@ function codexLimits() {
 }
 
 function render(d) {
-  const parts = [wrap(DIM_CYAN, d.model?.display_name || d.model?.id || "Unknown")];
+  const parts = [wrap(CYAN, d.model?.display_name || d.model?.id || "Unknown")];
 
   const effort = d.effort?.level;
-  if (effort) parts.push(wrap(DIM_CYAN, "Effort: " + String(effort)[0].toUpperCase() + String(effort).slice(1)));
+  if (effort) parts.push(wrap(CYAN, String(effort)[0].toUpperCase() + String(effort).slice(1)));
 
   // total_input_tokens is null until the first API response of the session.
   const total = Number.parseInt(d.context_window?.total_input_tokens, 10) || 0;
-  parts.push(wrap(BOLD_BLUE, "Tokens: " + (total >= 1000 ? (total / 1000).toFixed(1) + "k" : String(total))));
+  parts.push(wrap(BOLD_BLUE, (total >= 1000 ? (total / 1000).toFixed(1) + "k" : String(total))));
 
   const rl = d.rate_limits || {};
   const five = toPct(rl.five_hour?.used_percentage);
   const week = toPct(rl.seven_day?.used_percentage);
-  if (five !== null) parts.push(wrap(tierColor(five), `5h: [${bar(five)}] ${five}%`));
-  if (week !== null) parts.push(wrap(tierColor(week), `7d: ${week}%`));
-  const claudeResets = resetsSegment("Resets:", [
-    ["5h", rl.five_hour?.resets_at],
-    ["7d", rl.seven_day?.resets_at],
-  ]);
-  if (claudeResets) parts.push(claudeResets);
+  if (five !== null) parts.push(windowSegment("5h", five, rl.five_hour?.resets_at, true));
+  if (week !== null) parts.push(windowSegment("7d", week, rl.seven_day?.resets_at, false));
   // rate_limits is absent until the first API response of the session.
-  if (five === null && week === null && Object.keys(rl).length === 0) parts.push(wrap(DIM_CYAN, "Limits: warming up"));
+  if (five === null && week === null && Object.keys(rl).length === 0) parts.push(wrap(CYAN, "Limits: warming up"));
 
   let codex = null;
   try {
@@ -223,20 +228,17 @@ function render(d) {
   } catch {}
   if (codex) {
     const [c5, c7] = codex;
-    if (c5.pct !== null) parts.push(wrap(tierColor(c5.pct), `Codex 5h: [${bar(c5.pct)}] ${c5.pct}%`));
-    if (c7.pct !== null) parts.push(wrap(tierColor(c7.pct), `Codex 7d: ${c7.pct}%`));
-    const codexResets = resetsSegment("Codex Resets:", [
-      ["5h", c5.resetsAt],
-      ["7d", c7.resetsAt],
-    ]);
-    if (codexResets) parts.push(codexResets);
+    const codexParts = [];
+    if (c5.pct !== null) codexParts.push(windowSegment("5h", c5.pct, c5.resetsAt, true));
+    if (c7.pct !== null) codexParts.push(windowSegment("7d", c7.pct, c7.resetsAt, false));
+    if (codexParts.length) parts.push([wrap(CYAN, "Codex"), ...codexParts].join(" | "));
   }
 
   let live = null;
   try {
     live = liveCodexTokens();
   } catch {}
-  if (live !== null) parts.push(wrap(BOLD_BLUE, "Codex live: " + fmtTokens(live)));
+  if (live !== null) parts.push(wrap(BOLD_BLUE, "live: " + fmtTokens(live)));
   return parts.join(" | ");
 }
 
