@@ -27,7 +27,7 @@ npm run setup
 | `npm run install-claude` | Puts Claude Code on PATH, adds the `cc` alias, registers the status line, links `~/.claude/rules` to `rules/`, installs Matt's set, pstack and pstack-codex. On Windows it also adds `claude-use work\|personal`, which swaps the login of every Claude session, running ones included. First time on an account: `claude-use work`, then `/login` in any session |
 | `npm run link` | Symlinks my skills into every harness |
 | `npm run install-hooks` | Registers the command guard in Claude Code, Cursor, Codex |
-| `npm run install-shell` | Windows only: installs posh-git for git tab completion and loads it on the first `git <Tab>`, so new shells start without its ~1.5 s import |
+| `npm run install-shell` | Windows only: installs posh-git for git tab completion and imports it once the prompt is up and the shell is idle, so new shells don't wait on its ~1.5 s import |
 
 ## 2. Check it worked
 
