@@ -56,7 +56,8 @@ Tell the user in one line which links exist and which you will create.
 - Tool: `bump-my-version` (the maintained successor of `bumpversion`). When `bump-my-version --version` fails, install it: `pip install bump-my-version`.
 - `bump-my-version bump <level> --no-commit --no-tag`. It reads the version files from the repository's config (`.bumpversion.toml`, `.bumpversion.cfg`, `setup.cfg`, or `[tool.bumpversion]` in `pyproject.toml`).
 - When there is no config, add the files the last version-bump commit in `git log` changed: `bump-my-version bump <level> --current-version <version> --no-commit --no-tag <files>`. When there is no such commit, use `package.json`, `pyproject.toml`, `Cargo.toml`, or `VERSION`, whichever holds a version.
-- Commit only the files the bump changed. Copy the message of the last bump commit. When there is none, use `<KEY>: bump version to <new version>`.
+- When the repository has a `CHANGELOG.md`, add an entry for the new version. Copy the format of the newest entry: heading, date, sections. Write one line per change: what it does for the user, from the ticket and the diff. When an `Unreleased` section exists, move its lines under the new version.
+- Commit only the files the bump changed, plus `CHANGELOG.md`. Copy the message of the last bump commit. When there is none, use `<KEY>: bump version to <new version>`.
 
 **Pre-commit.** Runs after the bump, before every push. Skip it when the repository has no `.pre-commit-config.yaml`.
 - `pre-commit run --from-ref <target> --to-ref HEAD`.
