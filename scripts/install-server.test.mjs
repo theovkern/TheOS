@@ -177,3 +177,8 @@ test("with no boxes defined the unit succeeds", () => {
   const home = mkdtempSync(join(tmpdir(), "unit-home-"));
   assert.equal(spawnSync("/bin/sh", ["-c", bootScript({ sbx: "/nonexistent/sbx", node: "/nonexistent/node", box: "/nonexistent/box.mjs" }, home)]).status, 0);
 });
+
+test("stopping or failing the unit leaves the sbx daemon and the boxes it started running", () => {
+  const unit = { sbx: "/usr/bin/sbx", node: "/usr/bin/node", box: "/x/box.mjs" };
+  assert.ok(unitFile(unit).split("\n").includes("KillMode=process"));
+});

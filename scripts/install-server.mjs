@@ -30,7 +30,9 @@ export const sshdDropIn = () => SSHD_SETTINGS.map((setting) => `${setting}\n`).j
 /** The user unit that brings the boxes back after a boot and up to date. `$` is doubled and `%h` used because
  *  systemd expands both in a command line before the shell sees it. The daemon start may fail harmlessly when
  *  the daemon is already up, hence the leading `-`; a box that fails to start or to update does fail the unit,
- *  but not the boxes after it. `node` and `box` are absolute because a user unit has almost no PATH. */
+ *  but not the boxes after it. `node` and `box` are absolute because a user unit has almost no PATH.
+ *  The daemon and every box VM start inside this unit's cgroup, so KillMode=process: under the default,
+ *  a restart or a failed update would kill all of them, mid-write. */
 export const unitFile = ({ sbx, node, box }) =>
   [
     "[Unit]",
@@ -40,6 +42,7 @@ export const unitFile = ({ sbx, node, box }) =>
     "Type=oneshot",
     "RemainAfterExit=yes",
     "TimeoutStartSec=30min",
+    "KillMode=process",
     `ExecStart=-${sbx} daemon start --detach`,
     `ExecStart=/bin/sh -c 'status=0; for dir in "%h"/.config/theos/boxes/*/; do [ -f "$$dir/sbxenv.yaml" ] || continue; name="$$(basename "$$dir")"; "${sbx}" run -d --name "$$name" && "${node}" "${box}" update "$$name" || status=1; done; exit $$status'`,
     "",
