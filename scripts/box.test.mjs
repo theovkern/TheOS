@@ -276,6 +276,14 @@ test("new that fails to create leaves nothing behind, so it can be run again", (
   assert.equal(result.status, 1);
   assert.ok(!existsSync(sbx.dir("box2")));
   assert.ok(!sbx.sbxCalls().some((call) => call.startsWith("run")));
+  assert.ok(sbx.sbxCalls().includes(`env rm --force ${sbx.dir("box2")}`), "sbx removes the half-made sandbox");
+});
+
+test("new that fails to create after storing a token removes the token too", () => {
+  const sbx = standIn({ failOn: "env create" });
+  assert.equal(sbx.run(["new", "box2", "--token"]).status, 1);
+  assert.ok(sbx.sbxCalls().includes("secret rm github --sandbox box2 -f"));
+  assert.ok(!existsSync(sbx.dir("box2")));
 });
 
 test("new refuses a name that is taken, by a definition or by any sandbox", () => {

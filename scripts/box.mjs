@@ -251,16 +251,21 @@ async function createBox({ name, repo, memory, token, theosRef }) {
   writeFileSync(join(dir, "sbxenv.yaml"), renderEnv({ name, repo, memory, kit: KIT, theosRef }));
   console.log(`defined  ${join(dir, "sbxenv.yaml")}`);
 
+  let tokenStored = false;
+  // A failed create can leave a half-made sandbox and the token behind, so sbx cleans up before the definition goes.
   const undo = (message) => {
+    sbx(["env", "rm", "--force", dir]);
+    if (tokenStored) sbx(["secret", "rm", "github", "--sandbox", name, "-f"]);
     rmSync(dir, { recursive: true });
     throw new Error(message);
   };
 
   if (token === "yes" || (token === "ask" && (await ask(`Store a GitHub token for ${name} now? sbx prompts for it and keeps it on the host. [y/N] `)))) {
     if (sbx(["secret", "set", "github", "--sandbox", name]).status !== 0) undo("storing the token failed");
+    tokenStored = true;
   }
 
-  if (sbx(["env", "create", "--force", dir]).status !== 0) undo(`sbx env create failed; ${dir} was removed`);
+  if (sbx(["env", "create", "--force", dir]).status !== 0) undo(`sbx env create failed, so ${name} was cleaned up: sandbox, token and definition`);
   if (sbx(["run", "-d", "--name", name]).status !== 0) throw new Error(`${name} was created but did not start. Try: sbx run -d --name ${name}`);
 
   console.log(`\nChecking ${name} from inside:`);
