@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Mints and caches installation tokens for the healthos-agent GitHub App.
+#   healthos-agent-token                       print a token, cached until 10 min before expiry
+#   healthos-agent-token --git-credential get  answer git's credential-helper protocol
+#   healthos-agent-token --here                exit 0 if $PWD's origin is a repo the App is installed on
+set -euo pipefail
+
+dir="$HOME/.config/healthos-agent"
+key="$dir/private-key.pem"
+cache="$dir/token.json"
+repos="$dir/repos.txt"   # owner/name per line, rewritten with every new token
+lookup_repo="theovkern/healthos"   # any installed repo; only used to find the installation
+
+save_repos() {
+  curl -fsS -H "Authorization: Bearer $1" -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/installation/repositories?per_page=100" \
+    | jq -r '.repositories[].full_name' >"$repos.tmp"
+  mv "$repos.tmp" "$repos"
+}
+
+token() {
+  local now; now=$(date +%s)
+  if [[ -f $cache ]] && (( $(jq -r .exp "$cache") - now > 600 )); then
+    jq -r .token "$cache"
+    return
+  fi
+
+  local app_id; app_id=$(<"$dir/app-id")
+  b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+  local header payload sig jwt
+  header=$(printf '{"alg":"RS256","typ":"JWT"}' | b64)
+  # iat 60 s in the past absorbs clock skew; GitHub caps exp at 10 min.
+  payload=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 540)) "$app_id" | b64)
+  sig=$(printf '%s.%s' "$header" "$payload" | openssl dgst -sha256 -sign "$key" | b64)
+  jwt="$header.$payload.$sig"
+
+  api() { curl -fsS -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" "$@"; }
+  local inst resp tok exp
+  inst=$(api "https://api.github.com/repos/$lookup_repo/installation" | jq -r .id)
+  resp=$(api -X POST "https://api.github.com/app/installations/$inst/access_tokens")
+  tok=$(jq -r .token <<<"$resp")
+  exp=$(date -d "$(jq -r .expires_at <<<"$resp")" +%s)
+
+  (umask 077; jq -n --arg t "$tok" --argjson e "$exp" '{token: $t, exp: $e}' >"$cache")
+  (umask 077; save_repos "$tok") || true
+  echo "$tok"
+}
+
+# Reads only the saved list, so it works offline and costs no API call.
+here() {
+  local url slug
+  [[ -f $key ]] || return 1
+  url=$(command git remote get-url origin 2>/dev/null) || return 1
+  [[ $url =~ ^(git@github\.com:|ssh://git@github\.com/|https://github\.com/)([^/]+/[^/]+)$ ]] || return 1
+  slug=${BASH_REMATCH[2]%.git}
+  [[ -s $repos ]] || (umask 077; save_repos "$(token)") || return 1
+  grep -qixF "$slug" "$repos"
+}
+
+case ${1:-} in
+  --git-credential)
+    [[ ${2:-} == get ]] || exit 0
+    echo "username=x-access-token"
+    echo "password=$(token)" ;;
+  --here) here ;;
+  *) token ;;
+esac

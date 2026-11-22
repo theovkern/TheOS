@@ -67,6 +67,24 @@ gh repo clone theovkern/mssg_dssptch
 gh repo clone theovkern/theos-me
 ```
 
+## 5. Agents act as the GitHub App (Linux, macOS)
+
+Claude Code sessions push, open PRs and comment as `healthos-agent[bot]` in every repo the
+GitHub App `healthos-agent` is installed on. Your own terminal, and every other repo, keep
+SSH and your personal login. Not part of `npm run setup`, because it needs a key:
+
+1. Generate a private key for this machine at
+   [github.com/settings/apps/healthos-agent](https://github.com/settings/apps/healthos-agent),
+   under "Private keys". One key per machine: a lost machine then costs one revoked key.
+2. Save it as `~/.config/healthos-agent/private-key.pem` and `chmod 600` it.
+3. `npm run install-agent-app`. It installs `healthos-agent-token` in `~/.local/bin`, writes
+   the App ID and puts the `gh`/`git` wrapper block in `~/.bashrc`.
+4. Start a new Claude session. A running one keeps the shell it snapshotted at start.
+
+Which repos get the bot is set by the App's installation on GitHub, not here. A repo added
+there switches over within an hour, or at once after deleting
+`~/.config/healthos-agent/repos.txt`.
+
 ## What is not backed up
 
 `advisory-board` and `teaching` are untracked by explicit decision. They exist only on the
@@ -79,6 +97,10 @@ Re-run `npm run link`.
 
 **`~/.claude/skills/synced/` belongs to Claude Code.** Never write there by hand. The linker
 refuses the name for this reason.
+
+**Shell functions named `_something` vanish in Claude Code.** Its shell snapshot drops
+them. A wrapper that calls such a helper silently falls back to the plain command. The
+agent App block keeps its logic in the token script for this reason.
 
 **Replaced directories are parked, not deleted.** If `npm run link` reports `replaced`, the
 old copy is in `~/.claude/skills-replaced/` or `~/.agents/skills-replaced/`. Check it holds
