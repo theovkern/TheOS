@@ -331,7 +331,12 @@ function updateBoxes({ name, theosRef }) {
 
 function removeBox({ name, yes }) {
   const dir = join(boxesDir(), name);
-  if (!existsSync(dir)) throw new Error(`${name} is not defined in ${boxesDir()}`);
+  if (!existsSync(dir)) {
+    // A sandbox made before `box` existed, or by hand: sbx alone knows it.
+    if (!sandboxes().some((box) => box.name === name)) throw new Error(`there is no box or sandbox named ${name}`);
+    if (sbx(["rm", ...(yes ? ["--force"] : []), name]).status !== 0) throw new Error(`sbx could not remove ${name}`);
+    return console.log(`removed  ${name}`);
+  }
   if (sandboxes().some((box) => box.name === name)) {
     if (sbx(["env", "rm", ...(yes ? ["--force"] : []), dir]).status !== 0) throw new Error(`sbx could not remove ${name}; its definition is kept`);
   }

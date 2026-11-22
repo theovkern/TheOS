@@ -323,10 +323,16 @@ test("rm keeps the definition when sbx cannot remove the sandbox, and removes it
   assert.ok(!existsSync(orphan.dir("box2")));
 });
 
-test("rm of a box nobody defined is an error, and never touches sbx", () => {
-  const sbx = standIn({ sandboxes: [{ name: "box1", status: "running" }] });
+test("rm of a sandbox TheOS did not define removes it through sbx", () => {
+  const sbx = standIn({ sandboxes: [{ name: "box1", status: "stopped" }] });
   const result = sbx.run(["rm", "box1", "--yes"]);
-  assert.equal(result.status, 1);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(sbx.sbxCalls(), ["rm --force box1"]);
+});
+
+test("rm of a name nobody knows is an error, and never touches sbx", () => {
+  const sbx = standIn();
+  assert.equal(sbx.run(["rm", "box9", "--yes"]).status, 1);
   assert.deepEqual(sbx.sbxCalls(), []);
 });
 
