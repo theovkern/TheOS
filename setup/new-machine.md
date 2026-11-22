@@ -67,6 +67,26 @@ gh repo clone theovkern/mssg_dssptch
 gh repo clone theovkern/theos-me
 ```
 
+## 5. Agents act as a GitHub App (Linux, macOS)
+
+Optional. Claude Code sessions then push, open PRs and comment as a GitHub App's bot user in
+every repo the App is installed on, so their work is never mistaken for yours. Your own
+terminal, and every other repo, keep SSH and your personal login.
+
+1. Once: create a GitHub App under your account (Settings, Developer settings, GitHub Apps)
+   with the permissions your agents need, for example Contents, Pull requests and Issues set
+   to read and write. Install it on the repos the agents work in. Note its App ID.
+2. Per machine: generate a private key in the App's settings, save it as
+   `~/.config/agent-app/private-key.pem` and `chmod 600` it. One key per machine, so a lost
+   machine costs one revoked key.
+3. `npm run install-agent-app -- --app-id <id>`. It installs `agent-app-token` in
+   `~/.local/bin`, saves the App ID and puts the `gh`/`git` wrapper block in `~/.bashrc`.
+4. Start a new Claude session. A running one keeps the shell it snapshotted at start.
+
+Which repos get the bot is set by the App's installation on GitHub, not here. A repo added
+there switches over within an hour, or at once after deleting
+`~/.config/agent-app/repos.txt`.
+
 ## What is not backed up
 
 `advisory-board` and `teaching` are untracked by explicit decision. They exist only on the
@@ -79,6 +99,10 @@ Re-run `npm run link`.
 
 **`~/.claude/skills/synced/` belongs to Claude Code.** Never write there by hand. The linker
 refuses the name for this reason.
+
+**Shell functions named `_something` vanish in Claude Code.** Its shell snapshot drops
+them. A wrapper that calls such a helper silently falls back to the plain command. The
+agent App block keeps its logic in `agent-app-token` for this reason.
 
 **Replaced directories are parked, not deleted.** If `npm run link` reports `replaced`, the
 old copy is in `~/.claude/skills-replaced/` or `~/.agents/skills-replaced/`. Check it holds

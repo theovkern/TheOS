@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Mints and caches installation tokens for a GitHub App you own, so coding agents can act as it.
+# Reads two files from $AGENT_APP_DIR (default ~/.config/agent-app): app-id and private-key.pem.
+# Everything else (the bot's name and email, the repos it is installed on) comes from GitHub.
+#   agent-app-token                       print a token, cached until 10 min before expiry
+#   agent-app-token --git-credential get  answer git's credential-helper protocol
+#   agent-app-token --here                if $PWD's origin is a repo the App is installed on,
+#                                         print "<bot name><TAB><bot email>" and exit 0
+set -euo pipefail
+
+dir="${AGENT_APP_DIR:-$HOME/.config/agent-app}"
+key="$dir/private-key.pem"
+cache="$dir/token.json"
+repos="$dir/repos.txt"     # owner/name per line, rewritten with every new token
+ident="$dir/identity"      # "<bot name><TAB><bot email>", written once
+
+b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+
+jwt() {
+  local now app_id header payload sig
+  now=$(date +%s)
+  app_id=$(<"$dir/app-id")
+  header=$(printf '{"alg":"RS256","typ":"JWT"}' | b64)
+  # iat 60 s in the past absorbs clock skew; GitHub caps exp at 10 min.
+  payload=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 540)) "$app_id" | b64)
+  sig=$(printf '%s.%s' "$header" "$payload" | openssl dgst -sha256 -sign "$key" | b64)
+  printf '%s.%s.%s' "$header" "$payload" "$sig"
+}
+
+api() {
+  local auth=$1; shift
+  curl -fsS -H "Authorization: Bearer $auth" -H "Accept: application/vnd.github+json" "$@"
+}
+
+# One installation is the normal case. An App installed on several accounts needs
+# $dir/installation-id to say which one.
+installation_id() {
+  if [[ -f $dir/installation-id ]]; then cat "$dir/installation-id"; return; fi
+  local ids; ids=$(api "$1" "https://api.github.com/app/installations" | jq -r '.[].id')
+  if [[ $(wc -l <<<"$ids") -ne 1 ]]; then
+    echo "agent-app-token: the App has $(wc -l <<<"$ids") installations; put one id in $dir/installation-id" >&2
+    return 1
+  fi
+  echo "$ids"
+}
+
+save_meta() {
+  local tok=$1 j=$2
+  api "$tok" "https://api.github.com/installation/repositories?per_page=100" \
+    | jq -r '.repositories[].full_name' >"$repos.tmp"
+  mv "$repos.tmp" "$repos"
+  if [[ ! -s $ident ]]; then
+    local slug id
+    slug=$(api "$j" "https://api.github.com/app" | jq -r .slug)
+    id=$(api "$tok" "https://api.github.com/users/${slug}%5Bbot%5D" | jq -r .id)
+    printf '%s[bot]\t%s+%s[bot]@users.noreply.github.com\n' "$slug" "$id" "$slug" >"$ident"
+  fi
+}
+
+token() {
+  if [[ -f $cache ]] && (( $(jq -r .exp "$cache") - $(date +%s) > 600 )); then
+    jq -r .token "$cache"
+    return
+  fi
+  local j inst resp tok exp
+  j=$(jwt)
+  inst=$(installation_id "$j")
+  resp=$(api "$j" -X POST "https://api.github.com/app/installations/$inst/access_tokens")
+  tok=$(jq -r .token <<<"$resp")
+  exp=$(date -d "$(jq -r .expires_at <<<"$resp")" +%s)
+  umask 077
+  jq -n --arg t "$tok" --argjson e "$exp" '{token: $t, exp: $e}' >"$cache"
+  save_meta "$tok" "$j" || true
+  echo "$tok"
+}
+
+# Reads only saved files once they exist, so it works offline and costs no API call.
+here() {
+  [[ -f $key ]] || return 1
+  local url slug
+  url=$(command git remote get-url origin 2>/dev/null) || return 1
+  [[ $url =~ ^(git@github\.com:|ssh://git@github\.com/|https://github\.com/)([^/]+/[^/]+)$ ]] || return 1
+  slug=${BASH_REMATCH[2]%.git}
+  if [[ ! -s $repos || ! -s $ident ]]; then
+    rm -f "$cache"
+    token >/dev/null || return 1
+  fi
+  grep -qixF "$slug" "$repos" || return 1
+  cat "$ident"
+}
+
+case ${1:-} in
+  --git-credential)
+    [[ ${2:-} == get ]] || exit 0
+    echo "username=x-access-token"
+    echo "password=$(token)" ;;
+  --here) here ;;
+  *) token ;;
+esac
