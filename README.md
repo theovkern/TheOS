@@ -47,13 +47,16 @@ one.
 
 ```sh
 npm run box -- new <name> [owner/repo]   # define, create, start and check a box
+npm run box -- update [<name> | --all]   # bring running boxes up to date, then check them
 npm run box -- ls
 npm run box -- rm <name>
 ```
 
 [`setup/new-server.md`](./setup/new-server.md) makes a Linux machine the host for them
-(`npm run setup-server`). The kit holds copies of a few files from this repository, because a kit
-is one directory. `npm run sync-kit` refreshes them and `npm test` fails when one is stale.
+(`npm run setup-server`). A box holds a clone of this repository in `~/.theos` and follows one
+branch of it (`--theos-ref`, default `main`). `update` pulls that branch and re-runs
+[`scripts/box-refresh.mjs`](./scripts/box-refresh.mjs), so a box never has to be recreated to catch
+up. Push first: a box sees what is on GitHub, not your working tree.
 
 ## My skills
 

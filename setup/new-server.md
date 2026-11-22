@@ -28,7 +28,7 @@ and prints the `sudo` lines for you to paste.
 | linger | Lets your services run with nobody logged in |
 | sshd | Keys only: no passwords, no root login, no agent forwarding. Checked with `sshd -t` before the reload, and skipped if `~/.ssh/authorized_keys` is empty |
 | skills | `sbx skills add theovkern/TheOS`, so every box sees my skills |
-| boot | A user systemd unit that starts the sbx daemon and then every box under `~/.config/theos/boxes/` |
+| boot | A user systemd unit that starts the sbx daemon, then every box under `~/.config/theos/boxes/`, and runs `npm run box -- update` on each |
 
 Run it again at any time. A step whose end state already holds is skipped.
 
