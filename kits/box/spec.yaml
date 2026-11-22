@@ -45,10 +45,10 @@ setup:
         fi
         [ -d "$dir/.git" ] || git clone --quiet https://github.com/theovkern/TheOS "$dir"
         git -C "$dir" fetch --quiet origin "+refs/heads/$ref:refs/remotes/origin/$ref"
+        git -C "$dir" cat-file -e "origin/$ref:scripts/box-refresh.mjs" 2>/dev/null || { echo "origin/$ref has no scripts/box-refresh.mjs, so a box cannot be refreshed from it; ~/.theos is unchanged" >&2; exit 1; }
         git -C "$dir" checkout --quiet --force -B "$ref" "origin/$ref"
         git -C "$dir" clean --quiet -fd
         echo "theos $ref at $(git -C "$dir" rev-parse --short HEAD)"
-        [ -f "$dir/scripts/box-refresh.mjs" ] || { echo "origin/$ref has no scripts/box-refresh.mjs, so a box cannot be refreshed from it" >&2; exit 1; }
         exec node "$dir/scripts/box-refresh.mjs"
 
     - description: Clone the repo into ~/work/<name>

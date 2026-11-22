@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -108,7 +108,7 @@ test("a box made when the kit shipped copies has them parked in ~/.theos-replace
   assert.equal(head(home), first);
 });
 
-test("a branch with no refresh script fails with a message that says so, after moving the clone", () => {
+test("a branch with no refresh script fails with a message that says so, and leaves the clone where it was", () => {
   const origin = newOrigin();
   const first = publish(origin, "1");
   git(origin, "checkout", "-q", "-b", "old");
@@ -117,11 +117,14 @@ test("a branch with no refresh script fails with a message that says so, after m
   git(origin, "checkout", "-q", "main");
   const home = scratch("home");
 
+  assert.equal(bootstrap(home, origin, "main").status, 0);
+  rmSync(join(home, "refreshed"));
+
   const result = bootstrap(home, origin, "old");
   assert.equal(result.status, 1);
   assert.match(result.stderr, /origin\/old has no scripts\/box-refresh\.mjs/);
   assert.ok(!existsSync(join(home, "refreshed")));
-  assert.notEqual(head(home), first);
+  assert.equal(head(home), first);
 });
 
 test("a branch that does not exist fails the step", () => {
