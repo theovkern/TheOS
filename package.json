@@ -11,6 +11,8 @@
     "install-shell": "node scripts/install-shell.mjs",
     "install-tools": "node scripts/install-tools.mjs",
     "install-agent-app": "node scripts/install-agent-app.mjs",
+    "setup-server": "node scripts/install-server.mjs",
+    "box": "node scripts/box.mjs",
     "setup": "npm run install-tools && npm run install-claude && npm run link && npm run install-hooks && npm run install-shell",
     "test": "node --test scripts/*.test.mjs hooks/*.test.mjs"
   }

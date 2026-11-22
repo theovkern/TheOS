@@ -50,10 +50,28 @@ theovkern/TheOS` installs from this repository. Bump a plugin's `version` in its
 ## Command guard
 
 `hooks/deny-dangerous.mjs` blocks catastrophic shell commands in every repository on this
-machine, registered in Claude Code, Cursor and Codex. See `hooks/README.md`.
+machine, registered in Claude Code, Cursor and Codex, and in every agent box. See
+`hooks/README.md`.
 
 If the guard blocks a command: explain the block to the user. Do not retry it, do not
 rephrase it to slip past the pattern, and do not disable the guard.
+
+## Agent boxes
+
+`kits/box` is the sbx kit behind `npm run box`. It ships **no files**: sbx refuses to add a
+kit that has any to a live box, so a box could never be updated. Its one setup step clones this
+repository to `~/.theos` in the box at the branch the box's definition names (`--theos-ref`,
+default `main`) and runs `scripts/box-refresh.mjs`. That script is the only definition of a
+current box: tools, rules, plugins, command guard. `npm run box -- update` runs the same step
+in a live box, and so does the boot unit after it starts each box.
+
+A box therefore runs what is **pushed** to its branch, not your working tree. Never edit
+`~/.theos` in a box: every update resets it to origin.
+
+Tools come from `scripts/tools.json`, one entry per tool with the profiles that install it
+(`host`, `server`, `box`) and its commands per platform. Add a tool there, not in a script.
+
+Removing a sandbox is the user's to do: Claude Code's classifier blocks an agent from it.
 
 ## Projects
 
