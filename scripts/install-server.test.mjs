@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { plan, sshdDropIn, sshdScript, unitFile } from "./install-server.mjs";
 
+const UNIT = { sbx: "/usr/bin/sbx", node: "/usr/bin/node", box: "/home/theo/TheOS/scripts/box.mjs" };
+
 const settled = () => ({
   user: "theo",
   missingTools: [],
@@ -13,7 +15,7 @@ const settled = () => ({
   linger: true,
   sshd: { present: true, includesDropIns: true, current: sshdDropIn(), hasAuthorizedKey: true },
   missingSkills: [],
-  unit: { current: unitFile({ sbx: "/usr/bin/sbx" }), enabled: true, sbx: "/usr/bin/sbx" },
+  unit: { ...UNIT, current: unitFile(UNIT), enabled: true },
 });
 
 const fresh = () => ({
@@ -23,7 +25,7 @@ const fresh = () => ({
   linger: false,
   sshd: { present: true, includesDropIns: true, current: null, hasAuthorizedKey: true },
   missingSkills: ["skill-a"],
-  unit: { current: null, enabled: false, sbx: "/usr/bin/sbx" },
+  unit: { ...UNIT, current: null, enabled: false },
 });
 
 const names = ({ steps }) => steps.map(({ name }) => name.split(" (")[0]);
@@ -41,7 +43,7 @@ test("a bare machine needs everything, in an order where each step can rely on t
     "let user services run without a login",
     "harden sshd",
     "share TheOS skills with every box",
-    "start the sbx daemon and every box at boot",
+    "start the sbx daemon and every box at boot, and update each",
   ]);
   assert.deepEqual(warnings, []);
 });
@@ -58,14 +60,14 @@ test("each step is dropped once its end state holds", () => {
   assert.ok(!names(plan(withKvm)).includes("add theo to the kvm group"));
   const withSkills = { ...fresh(), missingSkills: [] };
   assert.ok(!names(plan(withSkills)).includes("share TheOS skills with every box"));
-  const stale = { ...settled(), unit: { current: "[Unit]\n", enabled: true, sbx: "/usr/bin/sbx" } };
-  assert.deepEqual(names(plan(stale)), ["start the sbx daemon and every box at boot"]);
+  const stale = { ...settled(), unit: { ...UNIT, current: "[Unit]\n", enabled: true } };
+  assert.deepEqual(names(plan(stale)), ["start the sbx daemon and every box at boot, and update each"]);
   const disabled = { ...settled(), unit: { ...settled().unit, enabled: false } };
-  assert.deepEqual(names(plan(disabled)), ["start the sbx daemon and every box at boot"]);
+  assert.deepEqual(names(plan(disabled)), ["start the sbx daemon and every box at boot, and update each"]);
 });
 
 test("the unit goes into the user's systemd folder and is enabled, never started", () => {
-  const step = plan({ ...settled(), unit: { current: null, enabled: false, sbx: "/usr/bin/sbx" } }).steps[0];
+  const step = plan({ ...settled(), unit: { ...UNIT, current: null, enabled: false } }).steps[0];
   assert.match(step.files[0].path, /\.config\/systemd\/user\/theos-boxes\.service$/);
   assert.deepEqual(step.commands, [["systemctl", "--user", "daemon-reload"], ["systemctl", "--user", "enable", "theos-boxes.service"]]);
 });
@@ -133,32 +135,45 @@ test("sshd hardening removes its drop-in and does not reload when sshd rejects t
 });
 
 // The command systemd would hand to sh: `$$` and `%h` expanded the way systemd expands them.
-const bootScript = (sbx, home) => {
-  const line = unitFile({ sbx }).split("\n").filter((l) => l.startsWith("ExecStart="))[1];
+const bootScript = (unit, home) => {
+  const line = unitFile(unit).split("\n").filter((l) => l.startsWith("ExecStart="))[1];
   return line.replace(/^ExecStart=\/bin\/sh -c '/, "").replace(/'$/, "").replaceAll("$$", "$").replaceAll("%h", home);
 };
 
-test("at boot the unit starts the daemon, then every defined box, and keeps going when one fails", () => {
+const stubProgram = (path, log, failOn) => {
+  writeFileSync(path, `#!/bin/sh\necho "$(basename "$0") $*" >> "${log}"\ncase "$*" in *${failOn}*) exit 1;; esac\n`);
+  chmodSync(path, 0o755);
+};
+
+test("at boot the unit starts the daemon, then starts and updates every defined box, and keeps going when one fails", () => {
   const home = mkdtempSync(join(tmpdir(), "unit-home-"));
   const boxes = join(home, ".config", "theos", "boxes");
-  for (const name of ["alpha", "broken", "gamma"]) {
+  for (const name of ["alpha", "broken", "delta", "gamma"]) {
     mkdirSync(join(boxes, name), { recursive: true });
     writeFileSync(join(boxes, name, "sbxenv.yaml"), "x");
   }
   mkdirSync(join(boxes, "stray"));
   const log = join(home, "log");
-  const sbx = join(home, "sbx");
-  writeFileSync(sbx, `#!/bin/sh\necho "$*" >> "${log}"\ncase "$*" in *broken*) exit 1;; esac\n`);
-  chmodSync(sbx, 0o755);
+  const unit = { sbx: join(home, "sbx"), node: join(home, "node"), box: join(home, "box.mjs") };
+  stubProgram(unit.sbx, log, "broken");
+  stubProgram(unit.node, log, "delta");
 
-  assert.equal(unitFile({ sbx }).split("\n").find((l) => l.startsWith("ExecStart=")), `ExecStart=-${sbx} daemon start --detach`);
-  const result = spawnSync("/bin/sh", ["-c", bootScript(sbx, home)], { encoding: "utf8" });
+  assert.equal(unitFile(unit).split("\n").find((l) => l.startsWith("ExecStart=")), `ExecStart=-${unit.sbx} daemon start --detach`);
+  const result = spawnSync("/bin/sh", ["-c", bootScript(unit, home)], { encoding: "utf8" });
 
   assert.equal(result.status, 1, "a failed box makes the unit fail, so systemctl shows it");
-  assert.deepEqual(readFileSync(log, "utf8").trim().split("\n"), ["run -d --name alpha", "run -d --name broken", "run -d --name gamma"]);
+  assert.deepEqual(readFileSync(log, "utf8").trim().split("\n"), [
+    "sbx run -d --name alpha",
+    `node ${unit.box} update alpha`,
+    "sbx run -d --name broken",
+    "sbx run -d --name delta",
+    `node ${unit.box} update delta`,
+    "sbx run -d --name gamma",
+    `node ${unit.box} update gamma`,
+  ]);
 });
 
 test("with no boxes defined the unit succeeds", () => {
   const home = mkdtempSync(join(tmpdir(), "unit-home-"));
-  assert.equal(spawnSync("/bin/sh", ["-c", bootScript("/nonexistent/sbx", home)]).status, 0);
+  assert.equal(spawnSync("/bin/sh", ["-c", bootScript({ sbx: "/nonexistent/sbx", node: "/nonexistent/node", box: "/nonexistent/box.mjs" }, home)]).status, 0);
 });

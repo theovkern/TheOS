@@ -2,18 +2,22 @@ schemaVersion: "2"
 kind: mixin
 name: theos-box
 displayName: TheOS box
-description: TheOS plugins, command guard and model rules on top of the built-in claude agent, plus an optional public repo clone.
+description: A TheOS clone in ~/.theos that brings the box current, on top of the built-in claude agent, plus an optional public repo clone.
 requires:
   agent: claude
 
 args:
+  theos_ref:
+    default: main
+    description: Branch of github.com/theovkern/TheOS that ~/.theos follows.
+    pattern: '^[A-Za-z0-9][A-Za-z0-9._/-]*$'
   repo:
     default: ""
     description: Public https://github.com/<owner>/<name> URL, cloned into ~/work/<name>. Empty skips the clone.
     pattern: '^(https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+)?$'
 
 # These bite only under `sbx policy init deny-all`; the default policy allows far more.
-# Seen in `sbx policy log`: the plugin and clone steps reach github.com, and
+# Seen in `sbx policy log`: the clone and plugin steps reach github.com, and
 # mattpocock-skills installs its dependencies from registry.npmjs.org.
 permissions:
   network:
@@ -21,29 +25,31 @@ permissions:
       - github.com
       - registry.npmjs.org
 
-# sbx rewrites ~/.claude/settings.json when it creates the box, so the plugins and the guard are
-# wired here, after that, and the guard last because installing a plugin rewrites the file too.
+# The kit ships no files, because sbx refuses `kit add` on a kit that does and so a live box could never
+# be updated. This step is the one thing a box needs before it holds TheOS, and `npm run box -- update`
+# reads it from here and runs it in a live box too. Everything after the clone is in scripts/box-refresh.mjs.
+# sbx rewrites ~/.claude/settings.json when it creates the box, so the refresh runs after that.
 setup:
   install:
-    - description: Install the tools the box profile lists (scripts/tools.json)
-      user: "1000"
-      command: HOME=/home/agent PATH=/home/agent/.local/bin:$PATH node /home/agent/.theos/scripts/install-tools.mjs --profile box
-
-    - description: Install the plugins TheOS installs (scripts/install-claude.mjs)
+    - description: Clone TheOS to ~/.theos and run its refresh script
       user: "1000"
       command: |
-        set -e
-        export HOME=/home/agent PATH=/home/agent/.local/bin:$PATH
-        for m in anthropics/claude-plugins-official cursor/plugins; do
-          claude plugin marketplace add "$m"
-        done
-        for p in mattpocock-skills@claude-plugins-official pstack@cursor-plugins; do
-          claude plugin install "$p" --scope user
-        done
-
-    - description: Wire the command guard into ~/.claude/settings.json
-      user: "1000"
-      command: HOME=/home/agent node /home/agent/.theos/scripts/wire-guard.mjs
+        set -eu
+        export HOME=/home/agent PATH=/home/agent/.local/bin:$PATH GIT_TERMINAL_PROMPT=0
+        ref='${{ kit.args.theos_ref }}'
+        dir=$HOME/.theos
+        if [ -d "$dir" ] && [ ! -d "$dir/.git" ]; then
+          # A box made when the kit shipped copies. Park them: nothing in a box is worth losing silently.
+          rm -rf "$dir-replaced"
+          mv "$dir" "$dir-replaced"
+        fi
+        [ -d "$dir/.git" ] || git clone --quiet https://github.com/theovkern/TheOS "$dir"
+        git -C "$dir" fetch --quiet origin "+refs/heads/$ref:refs/remotes/origin/$ref"
+        git -C "$dir" checkout --quiet --force -B "$ref" "origin/$ref"
+        git -C "$dir" clean --quiet -fd
+        echo "theos $ref at $(git -C "$dir" rev-parse --short HEAD)"
+        [ -f "$dir/scripts/box-refresh.mjs" ] || { echo "origin/$ref has no scripts/box-refresh.mjs, so a box cannot be refreshed from it" >&2; exit 1; }
+        exec node "$dir/scripts/box-refresh.mjs"
 
     - description: Clone the repo into ~/work/<name>
       user: "1000"

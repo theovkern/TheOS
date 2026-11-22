@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 // Defines and runs agent boxes: always-on sbx microVMs built from kits/box.
 //
-//   npm run box -- new <name> [owner/repo] [--memory 6g] [--token | --no-token]
+//   npm run box -- new <name> [owner/repo] [--theos-ref main] [--memory 6g] [--token | --no-token]
+//   npm run box -- update [<name> | --all] [--theos-ref <branch>]
 //   npm run box -- ls
 //   npm run box -- rm <name> [--yes]
 //
 // A box is defined by ~/.config/theos/boxes/<name>/sbxenv.yaml. That folder is outside every
 // workspace a box can write, which matters because sbx runs the file's host commands as me.
 // `new` writes it, optionally stores a GitHub token for that box alone, creates and starts the
-// sandbox, then checks the box from inside.
+// sandbox, then checks the box from inside. `update` runs the kit's clone step in a running box
+// again, which is all a box needs to catch up with its branch of TheOS, then checks it again.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -19,18 +21,24 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const KIT = join(repoRoot, "kits", "box");
 export const DEFAULT_MEMORY = "6g";
+export const DEFAULT_REF = "main";
+// The same pattern as theos_ref in kits/box/spec.yaml; a test holds the two together.
+export const REF_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
+export const BOOTSTRAP_STEP = "Clone TheOS to ~/.theos and run its refresh script";
 
 export const boxesDir = (home = homedir()) => join(home, ".config", "theos", "boxes");
 
-const USAGE = `usage: npm run box -- new <name> [owner/repo] [--memory ${DEFAULT_MEMORY}] [--token | --no-token]
+const USAGE = `usage: npm run box -- new <name> [owner/repo] [--theos-ref ${DEFAULT_REF}] [--memory ${DEFAULT_MEMORY}] [--token | --no-token]
+       npm run box -- update [<name> | --all] [--theos-ref <branch>]
        npm run box -- ls
        npm run box -- rm <name> [--yes]`;
 
 const usageError = (message) => new Error(`${message}\n${USAGE}`);
 
-/** Pure. The command line as one of { command: "new" | "ls" | "rm", ... }, or an error that says what is wrong. */
+/** Pure. The command line as one of { command: "new" | "update" | "ls" | "rm", ... }, or an error that says what is wrong.
+ *  An update with no name is an update of every box. */
 export function parseArgs(argv) {
-  const flags = { token: "ask", memory: DEFAULT_MEMORY, yes: false };
+  const flags = { token: "ask", memory: DEFAULT_MEMORY, yes: false, all: false, ref: undefined };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -38,6 +46,8 @@ export function parseArgs(argv) {
     else if (arg === "--token") flags.token = "yes";
     else if (arg === "--no-token") flags.token = "no";
     else if (arg === "--yes") flags.yes = true;
+    else if (arg === "--all") flags.all = true;
+    else if (arg === "--theos-ref") flags.ref = argv[++i] ?? "";
     else if (arg.startsWith("--")) throw usageError(`unknown flag ${arg}`);
     else positional.push(arg);
   }
@@ -48,23 +58,30 @@ export function parseArgs(argv) {
     if (name) throw usageError("ls takes no arguments");
     return { command };
   }
-  if (command !== "new" && command !== "rm") throw usageError(command ? `unknown command ${command}` : "no command");
+  if (!["new", "update", "rm"].includes(command)) throw usageError(command ? `unknown command ${command}` : "no command");
+  if (flags.ref !== undefined && !REF_PATTERN.test(flags.ref)) throw usageError(`--theos-ref takes a branch name, not ${flags.ref}`);
 
-  if (!/^[a-z0-9][a-z0-9-]+$/.test(name ?? "") || name === "default") {
+  if (command === "update") {
+    if (repo) throw usageError("update takes a box name or --all");
+    if (name && flags.all) throw usageError("give a box name or --all, not both");
+    if (flags.ref !== undefined && !name) throw usageError("--theos-ref applies to one box, so name it");
+  }
+  if ((command !== "update" || name) && (!/^[a-z0-9][a-z0-9-]+$/.test(name ?? "") || name === "default")) {
     throw usageError("a box name is at least two characters of lowercase letters, digits and hyphens, and not \"default\"");
   }
   if (command === "rm") {
     if (repo) throw usageError("rm takes only a name");
     return { command, name, yes: flags.yes };
   }
+  if (command === "update") return { command, name, theosRef: flags.ref };
 
   if (repo !== undefined && !/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(repo)) throw usageError(`${repo} is not owner/repo`);
   if (!/^[1-9]\d*[mg]$/.test(flags.memory ?? "")) throw usageError(`--memory takes a size like 512m or 6g, not ${flags.memory}`);
-  return { command, name, repo, memory: flags.memory, token: flags.token };
+  return { command, name, repo, memory: flags.memory, token: flags.token, theosRef: flags.ref ?? DEFAULT_REF };
 }
 
 /** Pure. The sbxenv.yaml for one box. Strings are written as JSON, which YAML reads as quoted strings. */
-export function renderEnv({ name, repo, memory, kit }) {
+export function renderEnv({ name, repo, memory, kit, theosRef }) {
   return [
     'schemaVersion: "1"',
     `name: ${JSON.stringify(name)}`,
@@ -72,7 +89,9 @@ export function renderEnv({ name, repo, memory, kit }) {
     "",
     "kits:",
     `  - source: ${JSON.stringify(kit)}`,
-    ...(repo ? ["    args:", `      repo: ${JSON.stringify(`https://github.com/${repo}`)}`] : []),
+    "    args:",
+    `      theos_ref: ${JSON.stringify(theosRef)}`,
+    ...(repo ? [`      repo: ${JSON.stringify(`https://github.com/${repo}`)}`] : []),
     "",
     "sandboxOptions:",
     `  memory: ${JSON.stringify(memory)}`,
@@ -87,6 +106,59 @@ export function boxRows(defined, sandboxes) {
   return names.map((name) => ({ name, status: status.get(name) ?? "not created", defined: defined.includes(name) }));
 }
 
+/** Pure. What a box's sbxenv.yaml says that `update` needs. An env written before theos_ref existed follows main. */
+export function storedDefinition(yaml) {
+  const arg = (key) => {
+    const match = yaml.match(new RegExp(`^\\s+${key}: (".*")\\s*$`, "m"));
+    return match ? JSON.parse(match[1]) : undefined;
+  };
+  return { repo: arg("repo")?.replace(/^https:\/\/github\.com\//, ""), theosRef: arg("theos_ref") ?? DEFAULT_REF };
+}
+
+/** Pure. The `command: |` of the kit step with this description, as the text sbx would run before it fills in the args. */
+export function kitCommand(spec, description) {
+  const lines = spec.split("\n");
+  const step = lines.findIndex((line) => line.trim() === `- description: ${description}`);
+  if (step < 0) throw new Error(`the kit spec has no step "${description}"`);
+  const next = lines.findIndex((line, i) => i > step && /^\s*- description:/.test(line));
+  const key = lines.findIndex((line, i) => i > step && /^\s+command: \|\s*$/.test(line));
+  if (key < 0 || (next >= 0 && key > next)) throw new Error(`the kit step "${description}" has no command: | block`);
+
+  const indent = (line) => line.match(/^ */)[0].length;
+  const block = [];
+  for (const line of lines.slice(key + 1)) {
+    if (line.trim() !== "" && indent(line) <= indent(lines[key])) break;
+    block.push(line);
+  }
+  const strip = Math.min(...block.filter((line) => line.trim() !== "").map(indent));
+  return block.map((line) => line.slice(strip)).join("\n").trim() + "\n";
+}
+
+const THEOS_REF_ARG = "${{ kit.args.theos_ref }}";
+
+/** Pure. The shell script that puts a box's ~/.theos at `ref` and refreshes the box: the kit's own step, so
+ *  creating a box and updating one cannot drift apart. */
+export function bootstrapScript(spec, ref) {
+  if (!REF_PATTERN.test(ref)) throw new Error(`${JSON.stringify(ref)} is not a branch name`);
+  return kitCommand(spec, BOOTSTRAP_STEP).replace(THEOS_REF_ARG, () => ref);
+}
+
+/** Pure. What `update` does to each sandbox: the boxes TheOS defined and that are running get updated, the rest are
+ *  skipped with the reason. A named box that cannot be updated is an error instead. */
+export function updateTargets(rows, name) {
+  if (name) {
+    const row = rows.find((candidate) => candidate.name === name);
+    if (!row) throw new Error(`no box named ${name}`);
+    if (!row.defined) throw new Error(`${name} was not defined by TheOS, so it is left alone`);
+    if (row.status !== "running") throw new Error(`${name} is ${row.status}. Start it first: sbx run -d --name ${name}`);
+    return [{ name }];
+  }
+  return rows.map(({ name, status, defined }) => {
+    if (!defined) return { name, skip: "not defined by TheOS" };
+    return status === "running" ? { name } : { name, skip: `not running (${status})` };
+  });
+}
+
 export const cloneDir = (repo) => `/home/agent/work/${repo.split("/")[1].replace(/\.git$/, "")}`;
 
 const SENTINEL_ONLY = String.raw`
@@ -99,9 +171,14 @@ const SENTINEL_ONLY = String.raw`
 
 const GUARD_BLOCKS = String.raw`grep -q deny-dangerous ~/.claude/settings.json || exit 1; echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf ~"}}' | node ~/.theos/hooks/deny-dangerous.mjs --claude`;
 
-/** Checks run inside a fresh box through `sbx exec`. Each says what it proves and how to tell from the result. */
-export function smokeChecks({ repo }) {
+/** Checks run inside a box through `sbx exec`. Each says what it proves and how to tell from the result. */
+export function smokeChecks({ repo, theosRef = DEFAULT_REF }) {
   return [
+    {
+      label: `~/.theos follows ${theosRef} and ~/.claude/rules links into it`,
+      argv: ["bash", "-c", `[ "$(git -C ~/.theos rev-parse --abbrev-ref HEAD)" = '${theosRef}' ] && [ "$(readlink ~/.claude/rules)" = "$HOME/.theos/rules" ]`],
+      passes: ({ status }) => status === 0,
+    },
     {
       label: "plugins pstack and mattpocock-skills are installed",
       argv: ["claude", "plugin", "list"],
@@ -154,9 +231,9 @@ async function ask(question) {
   return /^y(es)?$/i.test(answer.trim());
 }
 
-function smokeTest(name, repo) {
+function smokeTest(name, checks) {
   let failed = 0;
-  for (const { label, argv, passes } of smokeChecks({ repo })) {
+  for (const { label, argv, passes } of checks) {
     const result = spawnSync("sbx", ["exec", name, "--", ...argv], { encoding: "utf8", timeout: 180_000 });
     const ok = passes({ status: result.status, stdout: result.stdout ?? "" });
     console.log(`${ok ? "pass" : "FAIL"}  ${label}`);
@@ -165,13 +242,13 @@ function smokeTest(name, repo) {
   return failed === 0;
 }
 
-async function createBox({ name, repo, memory, token }) {
+async function createBox({ name, repo, memory, token, theosRef }) {
   const dir = join(boxesDir(), name);
   if (existsSync(dir) || sandboxes().some((box) => box.name === name)) {
     throw new Error(`${name} already exists. Remove it first: npm run box -- rm ${name}`);
   }
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "sbxenv.yaml"), renderEnv({ name, repo, memory, kit: KIT }));
+  writeFileSync(join(dir, "sbxenv.yaml"), renderEnv({ name, repo, memory, kit: KIT, theosRef }));
   console.log(`defined  ${join(dir, "sbxenv.yaml")}`);
 
   const undo = (message) => {
@@ -187,8 +264,40 @@ async function createBox({ name, repo, memory, token }) {
   if (sbx(["run", "-d", "--name", name]).status !== 0) throw new Error(`${name} was created but did not start. Try: sbx run -d --name ${name}`);
 
   console.log(`\nChecking ${name} from inside:`);
-  if (!smokeTest(name, repo)) throw new Error(`${name} is running, but a check failed`);
+  if (!smokeTest(name, smokeChecks({ repo, theosRef }))) throw new Error(`${name} is running, but a check failed`);
   console.log(`\n${name} is ready. Attach with: sbx run ${name}`);
+}
+
+function updateBox(name, theosRef) {
+  const { repo, theosRef: stored } = storedDefinition(readFileSync(join(boxesDir(), name, "sbxenv.yaml"), "utf8"));
+  const ref = theosRef ?? stored;
+  const script = bootstrapScript(readFileSync(join(KIT, "spec.yaml"), "utf8"), ref);
+
+  console.log(`\nUpdating ${name} to ${ref}:`);
+  const result = sbx(["exec", name, "--", "sh", "-c", script], { stdio: ["ignore", "inherit", "inherit"], timeout: 600_000 });
+  if (result.status !== 0) throw new Error(`updating ${name} failed, so its checks were not run`);
+
+  console.log(`\nChecking ${name} from inside:`);
+  if (!smokeTest(name, smokeChecks({ repo, theosRef: ref }))) throw new Error(`${name} was updated, but a check failed`);
+  console.log(`${name} is up to date. Sessions already open there keep the old plugins until they restart.`);
+}
+
+function updateBoxes({ name, theosRef }) {
+  const targets = updateTargets(boxRows(definedBoxes(), sandboxes()), name);
+  const failures = [];
+  for (const target of targets) {
+    if (target.skip) {
+      console.log(`skipped  ${target.name}: ${target.skip}`);
+      continue;
+    }
+    try {
+      updateBox(target.name, theosRef);
+    } catch (error) {
+      console.error(error.message);
+      failures.push(target.name);
+    }
+  }
+  if (failures.length > 0) throw new Error(`not up to date: ${failures.join(", ")}`);
 }
 
 function removeBox({ name, yes }) {
@@ -213,6 +322,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     const args = parseArgs(process.argv.slice(2));
     if (args.command === "new") await createBox(args);
+    else if (args.command === "update") updateBoxes(args);
     else if (args.command === "rm") removeBox(args);
     else listBoxes();
   } catch (error) {

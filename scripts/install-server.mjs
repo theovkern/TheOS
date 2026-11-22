@@ -5,7 +5,7 @@
 //   - lets my user services run without a login (linger)
 //   - hardens sshd: keys only, no root, no agent forwarding
 //   - shares TheOS's skills with every box
-//   - starts the sbx daemon and every defined box at boot, from a user systemd unit
+//   - starts the sbx daemon and every defined box at boot, then brings each up to date, from a user systemd unit
 // Run it in a real terminal. It asks for sudo once. With no terminal it does the steps that need no
 // root and prints the rest as a shell script, then exits 0.
 // Safe to run twice: each step first checks whether its end state already holds.
@@ -27,20 +27,21 @@ const SSHD_SETTINGS = ["PasswordAuthentication no", "KbdInteractiveAuthenticatio
 
 export const sshdDropIn = () => SSHD_SETTINGS.map((setting) => `${setting}\n`).join("");
 
-/** The user unit that brings the boxes back after a boot. `$` is doubled and `%h` used because systemd
- *  expands both in a command line before the shell sees it. The daemon start may fail harmlessly when
- *  the daemon is already up, hence the leading `-`; a box that fails to start does fail the unit. */
-export const unitFile = ({ sbx }) =>
+/** The user unit that brings the boxes back after a boot and up to date. `$` is doubled and `%h` used because
+ *  systemd expands both in a command line before the shell sees it. The daemon start may fail harmlessly when
+ *  the daemon is already up, hence the leading `-`; a box that fails to start or to update does fail the unit,
+ *  but not the boxes after it. `node` and `box` are absolute because a user unit has almost no PATH. */
+export const unitFile = ({ sbx, node, box }) =>
   [
     "[Unit]",
-    "Description=TheOS agent boxes: the sbx daemon, then every defined box",
+    "Description=TheOS agent boxes: the sbx daemon, then every defined box, started and updated",
     "",
     "[Service]",
     "Type=oneshot",
     "RemainAfterExit=yes",
-    "TimeoutStartSec=10min",
+    "TimeoutStartSec=30min",
     `ExecStart=-${sbx} daemon start --detach`,
-    `ExecStart=/bin/sh -c 'status=0; for dir in "%h"/.config/theos/boxes/*/; do [ -f "$$dir/sbxenv.yaml" ] || continue; ${sbx} run -d --name "$$(basename "$$dir")" || status=1; done; exit $$status'`,
+    `ExecStart=/bin/sh -c 'status=0; for dir in "%h"/.config/theos/boxes/*/; do [ -f "$$dir/sbxenv.yaml" ] || continue; name="$$(basename "$$dir")"; "${sbx}" run -d --name "$$name" && "${node}" "${box}" update "$$name" || status=1; done; exit $$status'`,
     "",
     "[Install]",
     "WantedBy=default.target",
@@ -60,7 +61,7 @@ export const sshdScript = (path = SSHD_DROP_IN) =>
 /**
  * Pure. What this machine still needs, in order, and what is wrong enough to say so.
  * facts: user, missingTools [{ name, commands }], kvmMembers (null without a kvm group), linger,
- *   sshd { present, includesDropIns, current, hasAuthorizedKey }, missingSkills, unit { current, enabled, sbx }.
+ *   sshd { present, includesDropIns, current, hasAuthorizedKey }, missingSkills, unit { current, enabled, sbx, node, box }.
  * A step: { name, sudo, commands, files?: [{ path, content }], needs?: "sbx" }.
  */
 export function plan(facts) {
@@ -87,11 +88,11 @@ export function plan(facts) {
     steps.push({ name: "share TheOS skills with every box", sudo: false, needs: "sbx", commands: [["sbx", "skills", "add", SKILLS_REPO, "--force"]] });
   }
 
-  if (facts.unit.current !== unitFile({ sbx: facts.unit.sbx }) || !facts.unit.enabled) {
+  if (facts.unit.current !== unitFile(facts.unit) || !facts.unit.enabled) {
     steps.push({
-      name: "start the sbx daemon and every box at boot",
+      name: "start the sbx daemon and every box at boot, and update each",
       sudo: false,
-      files: [{ path: join(homedir(), ".config", "systemd", "user", UNIT_NAME), content: unitFile({ sbx: facts.unit.sbx }) }],
+      files: [{ path: join(homedir(), ".config", "systemd", "user", UNIT_NAME), content: unitFile(facts.unit) }],
       commands: [["systemctl", "--user", "daemon-reload"], ["systemctl", "--user", "enable", UNIT_NAME]],
     });
   }
@@ -135,7 +136,13 @@ function gatherFacts() {
       hasAuthorizedKey: authorizedKeys.split("\n").some((line) => line.trim() && !line.trim().startsWith("#")),
     },
     missingSkills: Object.keys(discoverSkills(join(repoRoot, "skills"))).filter((name) => !stored.has(name)),
-    unit: { current: readOrNull(unitPath), enabled: output(["systemctl", "--user", "is-enabled", UNIT_NAME]) === "enabled", sbx },
+    unit: {
+      current: readOrNull(unitPath),
+      enabled: output(["systemctl", "--user", "is-enabled", UNIT_NAME]) === "enabled",
+      sbx,
+      node: process.execPath,
+      box: join(repoRoot, "scripts", "box.mjs"),
+    },
   };
 }
 
