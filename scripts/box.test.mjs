@@ -202,6 +202,7 @@ test("the credential check passes only when every token in the file is a proxy s
     return result.status;
   };
   assert.equal(verdict({ claudeAiOauth: { accessToken: "sk-ant-oat01-proxy-managed", refreshToken: "sk-ant-ort01-proxy-managed", scopes: ["a"] } }), 0);
+  assert.equal(verdict({ claudeAiOauth: { accessToken: "sk-ant-oat01-proxy-managed", refreshToken: "sk-ant-ort01-proxy-managed", refreshTokenExpiresAt: 1790000000000 } }), 0, "an expiry time is not a secret");
   assert.equal(verdict({ claudeAiOauth: { accessToken: "sk-ant-oat01-proxy-managed", refreshToken: "sk-ant-ort01-real-secret" } }), 1);
   assert.equal(verdict({ claudeAiOauth: { expiresAt: 1 } }), 1, "a file with no token at all proves nothing");
 });

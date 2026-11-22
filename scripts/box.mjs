@@ -164,7 +164,7 @@ export const cloneDir = (repo) => `/home/agent/work/${repo.split("/")[1].replace
 const SENTINEL_ONLY = String.raw`
   const fs = require("fs");
   const found = [];
-  const walk = (o) => { for (const [k, v] of Object.entries(o)) typeof v === "object" && v ? walk(v) : /token/i.test(k) && found.push(String(v)); };
+  const walk = (o) => { for (const [k, v] of Object.entries(o)) typeof v === "object" && v ? walk(v) : /token/i.test(k) && typeof v === "string" && found.push(v); };
   walk(JSON.parse(fs.readFileSync(process.env.HOME + "/.claude/.credentials.json", "utf8")));
   process.exit(found.length > 0 && found.every((v) => v.endsWith("proxy-managed")) ? 0 : 1);
 `;
