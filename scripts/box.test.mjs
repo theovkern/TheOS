@@ -427,3 +427,27 @@ test("update of a named box that is stopped, unknown or not TheOS's is an error 
   for (const name of ["box1", "box4", "ghost"]) assert.equal(sbx.run(["update", name]).status, 1, name);
   assert.deepEqual(sbx.execCalls(), []);
 });
+
+test("new gives the box the host's GitHub App when there is one, and makes the bot its git author", () => {
+  const sbx = standIn();
+  const home = dirname(dirname(dirname(dirname(sbx.dir("x")))));
+  const command = join(home, ".local", "bin", "agent-app-token");
+  mkdirSync(dirname(command), { recursive: true });
+  writeFileSync(command, `#!/bin/sh\nprintf 'theos-bot[bot]\\t1+theos-bot[bot]@users.noreply.github.com\\n'\n`);
+  chmodSync(command, 0o755);
+  mkdirSync(join(home, ".config", "agent-app"), { recursive: true });
+  writeFileSync(join(home, ".config", "agent-app", "private-key.pem"), "not a key");
+
+  const result = sbx.run(["new", "box2"]);
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.deepEqual(sbx.sbxCalls().slice(0, 2), [`secret set github --sandbox box2 --command ${command}`, `env create --force ${sbx.dir("box2")}`]);
+  assert.ok(sbx.execCalls().includes("exec box2 -- git config --global user.name theos-bot[bot]"));
+  assert.match(result.stdout, /pass {2}gh acts as theos-bot\[bot\]/);
+});
+
+test("new without the App key falls back to asking about a token", () => {
+  const sbx = standIn();
+  const result = sbx.run(["new", "box2"], "n\n");
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.ok(!sbx.sbxCalls().some((call) => call.startsWith("secret")));
+});

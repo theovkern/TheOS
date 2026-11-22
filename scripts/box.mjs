@@ -8,7 +8,8 @@
 //
 // A box is defined by ~/.config/theos/boxes/<name>/sbxenv.yaml. That folder is outside every
 // workspace a box can write, which matters because sbx runs the file's host commands as me.
-// `new` writes it, optionally stores a GitHub token for that box alone, creates and starts the
+// `new` writes it, gives the box GitHub access through the host's GitHub App when there is one (else
+// optionally a token for that box alone), creates and starts the
 // sandbox, then checks the box from inside. `update` runs the kit's clone step in a running box
 // again, which is all a box needs to catch up with its branch of TheOS, then checks it again.
 import { spawnSync } from "node:child_process";
@@ -172,7 +173,7 @@ const SENTINEL_ONLY = String.raw`
 const GUARD_BLOCKS = String.raw`grep -q deny-dangerous ~/.claude/settings.json || exit 1; echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf ~"}}' | node ~/.theos/hooks/deny-dangerous.mjs --claude`;
 
 /** Checks run inside a box through `sbx exec`. Each says what it proves and how to tell from the result. */
-export function smokeChecks({ repo, theosRef = DEFAULT_REF }) {
+export function smokeChecks({ repo, theosRef = DEFAULT_REF, app }) {
   return [
     {
       label: `~/.theos follows ${theosRef} and ~/.claude/rules links into it`,
@@ -200,6 +201,9 @@ export function smokeChecks({ repo, theosRef = DEFAULT_REF }) {
       argv: ["claude", "-p", "Reply with the single word ok."],
       passes: ({ status, stdout }) => status === 0 && /\bok\b/i.test(stdout),
     },
+    ...(app
+      ? [{ label: `gh acts as ${app.name}`, argv: ["gh", "api", "/installation/repositories", "--silent"], passes: ({ status }) => status === 0 }]
+      : []),
     ...(repo ? [{ label: `${repo} is cloned`, argv: ["test", "-d", `${cloneDir(repo)}/.git`], passes: ({ status }) => status === 0 }] : []),
   ];
 }
@@ -211,6 +215,18 @@ const sbx = (args, options = {}) => {
   if (result.error?.code === "ENOENT") throw new Error("sbx is not installed. Run npm run setup-server.");
   return result;
 };
+
+/** The host's GitHub App (TheOS `npm run install-agent-app`), or null. The key stays on the host: sbx runs the
+ *  token command there whenever a box talks to GitHub, and the box sees only a placeholder. */
+function agentApp() {
+  const command = join(homedir(), ".local", "bin", "agent-app-token");
+  const key = join(process.env.AGENT_APP_DIR ?? join(homedir(), ".config", "agent-app"), "private-key.pem");
+  if (!existsSync(command) || !existsSync(key)) return null;
+  const here = spawnSync(command, ["--here"], { cwd: repoRoot, encoding: "utf8" });
+  if (here.status !== 0) return null;
+  const [name, email] = here.stdout.trim().split("\t");
+  return { command, name, email };
+}
 
 const sandboxes = () => {
   const result = sbx(["ls", "--json"], { stdio: ["ignore", "pipe", "inherit"] });
@@ -260,16 +276,24 @@ async function createBox({ name, repo, memory, token, theosRef }) {
     throw new Error(message);
   };
 
-  if (token === "yes" || (token === "ask" && (await ask(`Store a GitHub token for ${name} now? sbx prompts for it and keeps it on the host. [y/N] `)))) {
+  const app = token === "ask" ? agentApp() : null;
+  if (app) {
+    console.log(`github   ${name} acts as ${app.name}, with tokens minted on this host`);
+    if (sbx(["secret", "set", "github", "--sandbox", name, "--command", app.command]).status !== 0) undo("pointing the box at the GitHub App failed");
+    tokenStored = true;
+  } else if (token === "yes" || (token === "ask" && (await ask(`Store a GitHub token for ${name} now? sbx prompts for it and keeps it on the host. [y/N] `)))) {
     if (sbx(["secret", "set", "github", "--sandbox", name]).status !== 0) undo("storing the token failed");
     tokenStored = true;
   }
 
   if (sbx(["env", "create", "--force", dir]).status !== 0) undo(`sbx env create failed, so ${name} was cleaned up: sandbox, token and definition`);
   if (sbx(["run", "-d", "--name", name]).status !== 0) throw new Error(`${name} was created but did not start. Try: sbx run -d --name ${name}`);
+  if (app) {
+    for (const [key, value] of [["user.name", app.name], ["user.email", app.email]]) sbx(["exec", name, "--", "git", "config", "--global", key, value]);
+  }
 
   console.log(`\nChecking ${name} from inside:`);
-  if (!smokeTest(name, smokeChecks({ repo, theosRef }))) throw new Error(`${name} is running, but a check failed`);
+  if (!smokeTest(name, smokeChecks({ repo, theosRef, app }))) throw new Error(`${name} is running, but a check failed`);
   console.log(`\n${name} is ready. Attach with: sbx run ${name}`);
 }
 

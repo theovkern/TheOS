@@ -43,7 +43,9 @@ Full notes in [`setup/`](./setup/).
 Always-on [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) microVMs, each running Claude Code
 with my plugins, the command guard and my model rules, defined once in [`kits/box`](./kits/box).
 A leaked token is the threat, so a box holds only a placeholder and the host proxy injects the real
-one.
+one. On a host with my GitHub App (`npm run install-agent-app`), a new box acts on GitHub as the App's
+bot: sbx runs `agent-app-token` on the host for each token, so the App's key never enters a box.
+`--token` stores a token you paste instead, `--no-token` gives the box no GitHub access.
 
 ```sh
 npm run box -- new <name> [owner/repo]   # define, create, start and check a box
