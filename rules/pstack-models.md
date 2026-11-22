@@ -16,7 +16,7 @@ why synthesizer: opus medium
 reflect tooling: sonnet high
 reflect judgment, divergent, synthesizer: opus medium
 arena runners: opus medium, sonnet high
-arena cross-judge pool: opus medium, codex:gpt-6-astra xhigh
+arena cross-judge pool: opus medium, codex:gpt-6-astra medium
 swarm workers: sonnet high
-architect runners: opus medium, sonnet high, codex:gpt-6-astra xhigh
+architect runners: opus medium, sonnet high, codex:gpt-6-astra medium
 interrogate reviewers: opus medium, sonnet high, codex:gpt-6-astra medium
