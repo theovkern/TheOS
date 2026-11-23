@@ -43,9 +43,12 @@ run)
     args+=(-s read-only)
   else
     args+=(-s workspace-write -c sandbox_workspace_write.network_access=true)
-    # npm keeps its cache outside the workspace.
-    if command -v npm >/dev/null; then
-      args+=(-c "sandbox_workspace_write.writable_roots=[\"$(winpath "$(npm config get cache)")\"]")
+    # npm and uv keep their caches outside the workspace, and uv run locks its cache.
+    caches=()
+    command -v npm >/dev/null && caches+=("\"$(winpath "$(npm config get cache)")\"")
+    command -v uv >/dev/null && caches+=("\"$(winpath "$(uv cache dir)")\"")
+    if [ ${#caches[@]} -gt 0 ]; then
+      args+=(-c "sandbox_workspace_write.writable_roots=[$(IFS=,; echo "${caches[*]}")]")
     fi
   fi
 
