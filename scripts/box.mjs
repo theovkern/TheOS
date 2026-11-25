@@ -21,9 +21,10 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const KIT = join(repoRoot, "kits", "box");
+export const KIT_SPEC = join(KIT, "box.yaml");
 export const DEFAULT_MEMORY = "6g";
 export const DEFAULT_REF = "main";
-// The same pattern as theos_ref in kits/box/spec.yaml; a test holds the two together.
+// The same pattern as theos_ref in kits/box/box.yaml; a test holds the two together.
 export const REF_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 export const BOOTSTRAP_STEP = "Clone TheOS to ~/.theos and run its refresh script";
 
@@ -300,7 +301,7 @@ async function createBox({ name, repo, memory, token, theosRef }) {
 function updateBox(name, theosRef) {
   const { repo, theosRef: stored } = storedDefinition(readFileSync(join(boxesDir(), name, "sbxenv.yaml"), "utf8"));
   const ref = theosRef ?? stored;
-  const script = bootstrapScript(readFileSync(join(KIT, "spec.yaml"), "utf8"), ref);
+  const script = bootstrapScript(readFileSync(KIT_SPEC, "utf8"), ref);
 
   console.log(`\nUpdating ${name} to ${ref}:`);
   const result = sbx(["exec", name, "--", "sh", "-c", script], { stdio: ["ignore", "inherit", "inherit"], timeout: 600_000 });

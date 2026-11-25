@@ -5,7 +5,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileS
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { BOOTSTRAP_STEP, KIT, REF_PATTERN, bootstrapScript, boxRows, cloneDir, kitCommand, parseArgs, renderEnv, smokeChecks, storedDefinition, updateTargets } from "./box.mjs";
+import { BOOTSTRAP_STEP, KIT, KIT_SPEC, REF_PATTERN, bootstrapScript, boxRows, cloneDir, kitCommand, parseArgs, renderEnv, smokeChecks, storedDefinition, updateTargets } from "./box.mjs";
 
 test("new takes a name, an optional owner/repo, and defaults to main, 6g and asking about a token", () => {
   assert.deepEqual(parseArgs(["new", "box2"]), { command: "new", name: "box2", repo: undefined, memory: "6g", token: "ask", theosRef: "main" });
@@ -109,7 +109,7 @@ test("update runs the boxes TheOS defined that are running, skips the rest with 
   assert.throws(() => updateTargets(rows, "nope"), /no box named nope/);
 });
 
-const spec = readFileSync(join(KIT, "spec.yaml"), "utf8");
+const spec = readFileSync(KIT_SPEC, "utf8");
 
 test("the kit's clone step is found by its description, with its block dedented and the next step left out", () => {
   const yaml = [
@@ -145,6 +145,7 @@ test("the bootstrap is the kit's own step with the branch filled in, and a branc
 
 test("the kit ships no files, takes the branch as an argument with the same pattern as the command line, and the step this file looks for exists", () => {
   assert.ok(!existsSync(join(KIT, "files")), "a kit with files cannot be added to a live box");
+  assert.match(spec, /^schemaVersion: "3"$/m, "sbx's claude agent is a v3 kit, and sbx refuses to mix v3 with v1/v2 kits");
   const pattern = spec.match(/theos_ref:[\s\S]*?pattern: '(.*)'/)[1];
   assert.equal(pattern, REF_PATTERN.source);
   assert.match(spec, /default: main/);

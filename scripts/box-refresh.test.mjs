@@ -5,7 +5,7 @@ import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync,
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { KIT, bootstrapScript } from "./box.mjs";
+import { KIT_SPEC, bootstrapScript } from "./box.mjs";
 import { linkRules } from "./box-refresh.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -42,7 +42,7 @@ const newOrigin = () => {
 };
 
 const bootstrap = (home, origin, ref = "main") => {
-  const script = bootstrapScript(readFileSync(join(KIT, "spec.yaml"), "utf8"), ref).replaceAll("/home/agent", home).replace("https://github.com/theovkern/TheOS", origin);
+  const script = bootstrapScript(readFileSync(KIT_SPEC, "utf8"), ref).replaceAll("/home/agent", home).replace("https://github.com/theovkern/TheOS", origin);
   return spawnSync("sh", ["-c", script], { env: { ...process.env, ...identity }, encoding: "utf8" });
 };
 

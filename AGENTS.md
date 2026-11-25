@@ -58,8 +58,10 @@ rephrase it to slip past the pattern, and do not disable the guard.
 
 ## Agent boxes
 
-`kits/box` is the sbx kit behind `npm run box`. It ships **no files**: sbx refuses to add a
-kit that has any to a live box, so a box could never be updated. Its one setup step clones this
+`kits/box` is the sbx kit behind `npm run box`, a v3 mixin in `kits/box/box.yaml`. It must stay
+v3: sbx's `claude` agent is a v3 kit, and sbx refuses to mix v3 kits with v1/v2 ones. It ships
+**no files**: sbx refuses to add a kit that has any to a live box, so a box could never be updated.
+Its first install hook adds Node, which the `claude` image lacks. Its clone hook clones this
 repository to `~/.theos` in the box at the branch the box's definition names (`--theos-ref`,
 default `main`) and runs `scripts/box-refresh.mjs`. That script is the only definition of a
 current box: tools, rules, plugins, command guard. `npm run box -- update` runs the same step
